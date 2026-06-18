@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// CineWheel security rules.
+// --------------------------------------------------------------------------
+// Every browser is signed in anonymously (no visible login), so we require an
+// authenticated request for all access. This blocks the open internet while
+// keeping zero sign-in friction. Within a group, anyone who knows the group
+// code can read/write that group's data — exactly like a Kahoot PIN. That's
+// appropriate for casual, private friend groups.
+//
+// Paste this whole file into the Firebase console:
+//   Build → Firestore Database → Rules → (replace contents) → Publish
+// --------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /groups/{groupId} {
+      allow read, create, update: if request.auth != null;
+      // (no group deletes from the client)
+
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
