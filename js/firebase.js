@@ -28,6 +28,7 @@ import {
   serverTimestamp,
   runTransaction,
   arrayUnion,
+  writeBatch,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
@@ -79,5 +80,6 @@ export {
   serverTimestamp,
   runTransaction,
   arrayUnion,
+  writeBatch,
   Timestamp,
 };

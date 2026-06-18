@@ -5,11 +5,15 @@
 import {
   db,
   doc,
+  collection,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   serverTimestamp,
   runTransaction,
+  arrayUnion,
+  writeBatch,
 } from "./firebase.js";
 import { getMemberId, getName } from "./session.js";
 
@@ -100,4 +104,54 @@ export function currentSpinnerId(group) {
 // Update this group's display name.
 export async function renameGroup(code, newName) {
   await updateDoc(doc(db, "groups", code), { name: (newName || "").trim() || "Film Club" });
+}
+
+// ---- group reset (requires unanimous approval) -----------------------------
+// A member proposes a reset; it only actually happens once EVERY current member
+// has approved. Anyone declining (or the proposer cancelling) clears it.
+
+export async function requestReset(code, memberId, name) {
+  await updateDoc(doc(db, "groups", code), {
+    resetRequest: {
+      startedBy: memberId,
+      startedByName: name || "",
+      startedAt: Date.now(),
+      approvals: [memberId], // the proposer approves by definition
+    },
+  });
+}
+
+// Add my approval (only if a request is still open).
+export async function approveReset(code, memberId) {
+  const ref = doc(db, "groups", code);
+  await runTransaction(db, async (tx) => {
+    const rr = (await tx.get(ref)).data()?.resetRequest;
+    if (!rr) return;
+    const approvals = Array.from(new Set([...(rr.approvals || []), memberId]));
+    tx.update(ref, { resetRequest: { ...rr, approvals } });
+  });
+}
+
+// Decline / cancel — clears the whole request.
+export async function cancelReset(code) {
+  await updateDoc(doc(db, "groups", code), { resetRequest: null });
+}
+
+// Wipe the club's films, ratings and history; keep members and the code.
+// Run once everyone has approved. Idempotent enough for our needs.
+export async function performReset(code) {
+  const [moviesSnap, ratingsSnap] = await Promise.all([
+    getDocs(collection(db, "groups", code, "movies")),
+    getDocs(collection(db, "groups", code, "ratings")),
+  ]);
+  const batch = writeBatch(db);
+  moviesSnap.forEach((d) => batch.delete(d.ref));
+  ratingsSnap.forEach((d) => batch.delete(d.ref));
+  batch.update(doc(db, "groups", code), {
+    currentFilm: null,
+    lastSpin: null,
+    currentSpinnerIndex: 0,
+    resetRequest: null,
+  });
+  await batch.commit();
 }

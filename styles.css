@@ -18,6 +18,7 @@
   --accent-ink: #14151A;
   --danger: #C97A6A;
   --star-empty: #3A3A40;
+  --topbar-bg: rgba(12, 10, 11, 0.9);
   --radius: 4px;
   --maxw: 760px;
   --serif: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
@@ -48,7 +49,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
   display: flex; align-items: center; gap: 14px;
   padding: 16px 22px; border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 50;
-  background: rgba(20, 21, 26, 0.92); backdrop-filter: blur(8px);
+  background: var(--topbar-bg); backdrop-filter: blur(8px);
 }
 .brand { font-family: var(--serif); font-weight: 800; font-size: 1.35rem; letter-spacing: 0.3px; }
 .topbar-group { display: flex; align-items: center; gap: 10px; }
@@ -241,3 +242,117 @@ textarea { resize: vertical; min-height: 70px; }
 .spin-caption { margin-top: 22px; font-family: var(--serif); font-size: 1.5rem; font-weight: 700; min-height: 1.6em; }
 .spin-caption.win { font-size: 2.1rem; color: var(--accent); animation: pop 0.4s ease; }
 @keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+
+/* ===========================================================================
+   THEMES — switch live with the Theme button (js/theme.js). Each overrides the
+   variables above; some add a few targeted rules for a genuinely different feel.
+   =========================================================================== */
+
+/* 1. Cinema — dark theatre, crimson glow + gold, dramatic serif (default) */
+[data-theme="cinema"] {
+  --bg: #0c0a0b; --bg-soft: #171012; --panel: #181012; --panel-2: #211517;
+  --line: #33222a; --line-strong: #4a2f38; --text: #f3e9e0; --muted: #b59a93;
+  --faint: #7c6660; --accent: #e5b567; --accent-hi: #f0c77e; --accent-ink: #1a0e0e;
+  --danger: #e2685f; --star-empty: #3a2a2e; --topbar-bg: rgba(12, 10, 11, 0.9);
+  --radius: 4px;
+  --serif: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+[data-theme="cinema"] body { background: radial-gradient(1000px 520px at 50% -12%, #2a0e14 0%, #0c0a0b 58%); }
+[data-theme="cinema"] .film-banner, [data-theme="cinema"] .sealed-banner { letter-spacing: 0.2em; }
+
+/* 2. Minimal — light, airy, near-grayscale, a single ink accent */
+[data-theme="minimal"] {
+  --bg: #ffffff; --bg-soft: #f6f6f7; --panel: #ffffff; --panel-2: #f3f4f6;
+  --line: #ececee; --line-strong: #d9dade; --text: #16171a; --muted: #71727a;
+  --faint: #a8a9b0; --accent: #16171a; --accent-hi: #000000; --accent-ink: #ffffff;
+  --danger: #b23a3a; --star-empty: #e1e2e6; --topbar-bg: rgba(255, 255, 255, 0.85);
+  --radius: 8px;
+  --serif: var(--sans);
+}
+[data-theme="minimal"] body { background: var(--bg); }
+[data-theme="minimal"] h1, [data-theme="minimal"] h2, [data-theme="minimal"] h3,
+[data-theme="minimal"] .brand, [data-theme="minimal"] .film-title { font-weight: 600; letter-spacing: -0.015em; }
+[data-theme="minimal"] .deadline-pill { border-color: var(--line-strong); color: var(--muted); }
+
+/* 3. Claude — warm cream paper, clay accent, soft and friendly */
+[data-theme="claude"] {
+  --bg: #f0eee6; --bg-soft: #faf9f5; --panel: #fbfaf6; --panel-2: #f2f0e8;
+  --line: #e6e3d9; --line-strong: #d7d3c5; --text: #2b2a26; --muted: #6b6862;
+  --faint: #9a968b; --accent: #c96442; --accent-hi: #d97757; --accent-ink: #ffffff;
+  --danger: #bc4b3c; --star-empty: #dad6ca; --topbar-bg: rgba(240, 238, 230, 0.9);
+  --radius: 12px;
+  --serif: Georgia, "Times New Roman", serif;
+}
+[data-theme="claude"] body { background: var(--bg); }
+
+/* 4. Early Internet — polished Web 1.0: silver, Times, blue links, beveled */
+[data-theme="web1"] {
+  --bg: #c3c7cb; --bg-soft: #ffffff; --panel: #ffffff; --panel-2: #ececec;
+  --line: #808080; --line-strong: #000000; --text: #111111; --muted: #444444;
+  --faint: #666666; --accent: #0000cc; --accent-hi: #0000ee; --accent-ink: #ffffff;
+  --danger: #cc0000; --star-empty: #9a9a9a; --topbar-bg: #c3c7cb;
+  --radius: 0px;
+  --serif: "Times New Roman", Times, serif;
+  --sans: "Times New Roman", Times, serif;
+}
+[data-theme="web1"] body { background: var(--bg); }
+[data-theme="web1"] .topbar { box-shadow: inset 0 -2px 0 #808080; border-bottom: 2px solid #fff; }
+[data-theme="web1"] .card, [data-theme="web1"] .tile, [data-theme="web1"] .superlative,
+[data-theme="web1"] .modal-box, [data-theme="web1"] .reset-box { border: 2px groove #ffffff; }
+[data-theme="web1"] .btn, [data-theme="web1"] .chip { background: #d4d0c8; color: #000; border: 2px outset #ffffff; }
+[data-theme="web1"] .btn:hover, [data-theme="web1"] .chip:hover { color: #000; border-color: #fff; }
+[data-theme="web1"] .btn:active, [data-theme="web1"] .chip:active { border-style: inset; }
+[data-theme="web1"] .btn.primary { background: #d4d0c8; color: #000; border: 2px outset #ffffff; font-weight: 700; }
+[data-theme="web1"] a, [data-theme="web1"] .text-link { color: #0000cc; text-decoration: underline; }
+[data-theme="web1"] input, [data-theme="web1"] textarea { border: 2px inset #fff; background: #fff; }
+[data-theme="web1"] .tab { border: 2px outset #fff; border-bottom: none; background: #d4d0c8; color: #000; margin-right: 2px; }
+[data-theme="web1"] .tab.active { background: #fff; }
+
+/* 5. Synthwave — neon magenta + cyan on indigo-black, retro-future glow */
+[data-theme="synth"] {
+  --bg: #0e0a1f; --bg-soft: #15102b; --panel: #16112e; --panel-2: #1e183c;
+  --line: #2c2350; --line-strong: #41356f; --text: #f4ecff; --muted: #a99fd0;
+  --faint: #6f6699; --accent: #ff4fd8; --accent-hi: #ff7be3; --accent-ink: #0e0a1f;
+  --danger: #ff6b81; --star-empty: #332a55; --topbar-bg: rgba(14, 10, 31, 0.85);
+  --radius: 10px;
+  --serif: var(--sans);
+}
+[data-theme="synth"] body { background: radial-gradient(900px 520px at 50% -12%, #3a1170 0%, #0e0a1f 55%); }
+[data-theme="synth"] h1, [data-theme="synth"] h2, [data-theme="synth"] h3,
+[data-theme="synth"] .brand { font-weight: 800; letter-spacing: 0.01em; }
+[data-theme="synth"] .btn.primary {
+  background: linear-gradient(90deg, #ff4fd8, #7a5cff); border-color: transparent; color: #fff;
+  box-shadow: 0 0 16px rgba(255, 79, 216, 0.45);
+}
+[data-theme="synth"] .btn.primary:hover { background: linear-gradient(90deg, #ff7be3, #8f74ff); color: #fff; }
+[data-theme="synth"] .tab.active { color: #fff; text-shadow: 0 0 10px rgba(255, 79, 216, 0.55); }
+[data-theme="synth"] .deadline-pill, [data-theme="synth"] .turn-chip.current { box-shadow: 0 0 10px rgba(255, 79, 216, 0.35); }
+
+/* ---- theme picker popover ---- */
+.theme-pop {
+  position: fixed; z-index: 120; min-width: 204px;
+  background: var(--panel); border: 1px solid var(--line-strong);
+  border-radius: var(--radius); padding: 6px; box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+  animation: fade 0.15s ease;
+}
+.theme-opt {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  background: none; border: none; color: var(--text); cursor: pointer;
+  padding: 9px 10px; border-radius: var(--radius); font-size: 0.9rem; text-align: left;
+  font-family: var(--sans);
+}
+.theme-opt:hover { background: var(--panel-2); }
+.theme-swatch { width: 26px; height: 26px; border-radius: 6px; flex: none; border: 1px solid rgba(128, 128, 128, 0.4); }
+.theme-name { flex: 1; }
+.theme-opt.active { color: var(--accent); font-weight: 700; }
+.theme-opt.active .theme-swatch { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---- group reset (unanimous consent) ---- */
+#reset-banner { margin-bottom: 20px; }
+.reset-box { background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius); padding: 18px 20px; }
+.reset-head { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; }
+.reset-desc { color: var(--muted); font-size: 0.9rem; margin: 6px 0 10px; }
+.reset-progress { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 12px; }
+.reset-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.danger-zone { border-color: var(--line-strong); }
+.danger-zone h3 { margin-top: 0; }

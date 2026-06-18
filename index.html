@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="cinema">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#14151A" />
+  <meta name="theme-color" content="#0c0a0b" />
   <title>CineWheel — Film Club</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2314151A'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-family='Georgia,serif' font-size='40' fill='%23C7A36B'%3EC%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,6 +22,7 @@
     </div>
     <div class="topbar-right">
       <button id="who-am-i" class="chip" title="Edit your name">Me</button>
+      <button id="theme-btn" class="chip" title="Switch theme">Theme</button>
       <button id="mute-btn" class="chip" title="Mute / unmute">Sound</button>
       <button id="leave-btn" class="chip hidden">Leave</button>
     </div>
@@ -75,6 +76,7 @@
 
     <!-- The app -->
     <section id="screen-app" class="screen hidden">
+      <div id="reset-banner" class="hidden"></div>
       <div id="film-card" class="card film-card"></div>
       <nav class="tabs">
         <button class="tab active" data-tab="wheel">Wheel</button>
@@ -99,6 +101,7 @@
     </div>
   </div>
 
+  <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

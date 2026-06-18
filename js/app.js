@@ -6,7 +6,10 @@ import { isConfigured, db, doc, collection, onSnapshot } from "./firebase.js";
 import {
   ensureAuth, getName, setName, getMemberId, getLastGroup, setLastGroup,
 } from "./session.js";
-import { createGroup, joinGroup, currentSpinnerId, normaliseCode } from "./groups.js";
+import {
+  createGroup, joinGroup, currentSpinnerId, normaliseCode,
+  requestReset, approveReset, cancelReset, performReset,
+} from "./groups.js";
 import { addMovie, removeMovie, commitSpin, markWatchedAck, finalizeRound, setDeadline } from "./movies.js";
 import {
   renderIdleWheel, chooseWinnerIndex, maybePlaySpin, setMuted, isMuted, resumeAudio,
@@ -54,6 +57,7 @@ const state = {
 };
 let namePromiseResolve = null;
 let finalizingId = null; // guards against firing finalizeRound repeatedly
+let resetting = false; // guards against firing performReset repeatedly
 
 // ---- boot ------------------------------------------------------------------
 async function init() {
@@ -316,12 +320,26 @@ function render() {
     finalizingId = null;
   }
 
+  // Group reset: show the consent banner, and wipe once everyone has approved.
+  renderResetBanner();
+  const rr = state.group?.resetRequest;
+  if (rr) {
+    const ids = state.members.map((m) => m.id);
+    const all = ids.length > 0 && ids.every((id) => (rr.approvals || []).includes(id));
+    if (all && !resetting) {
+      resetting = true;
+      performReset(state.code).catch(() => { resetting = false; });
+    }
+  } else {
+    resetting = false;
+  }
+
   renderFilmCard();
 
   if (state.tab === "wheel") renderWheelTab();
   else if (state.tab === "movies") { if (!editingWithin($("#tab-movies"))) renderMoviesTab(); }
   else if (state.tab === "history") { if (!editingWithin($("#tab-history"))) renderHistoryTab(); }
-  else if (state.tab === "stats") renderStats($("#tab-stats"), state.movies, state.ratings, state.members);
+  else if (state.tab === "stats") { renderStats($("#tab-stats"), state.movies, state.ratings, state.members); appendResetControl($("#tab-stats")); }
 
   maybePlaySpin(state.group?.lastSpin);
 }
@@ -603,6 +621,54 @@ function mountRatingEditor(container, movieId, myId, sealed) {
     container.querySelector(".save-note").textContent = sealed
       ? "Saved — sealed until everyone's in."
       : "Saved.";
+  });
+}
+
+// ---- group reset (unanimous consent) ---------------------------------------
+function renderResetBanner() {
+  const el = $("#reset-banner");
+  if (!el) return;
+  const rr = state.group?.resetRequest;
+  if (!rr) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+
+  const myId = getMemberId();
+  const ids = state.members.map((m) => m.id);
+  const approvals = rr.approvals || [];
+  const approvedCount = ids.filter((id) => approvals.includes(id)).length;
+  const iApproved = approvals.includes(myId);
+  const mine = rr.startedBy === myId;
+
+  el.classList.remove("hidden");
+  el.innerHTML = `
+    <div class="reset-box">
+      <div class="reset-head">${mine ? "You proposed resetting the club" : esc(rr.startedByName || "Someone") + " wants to reset the club"}</div>
+      <p class="reset-desc">This clears every film, rating and review and starts the club fresh — members and the club code stay. It only happens once <b>everyone</b> approves.</p>
+      <div class="reset-progress">Approved ${approvedCount} / ${ids.length}</div>
+      <div class="reset-actions">
+        ${iApproved ? `<span class="ack-pill done">You approved</span>` : `<button class="btn primary small" id="reset-approve">Approve reset</button>`}
+        <button class="btn small" id="reset-decline">${mine ? "Cancel request" : "Decline"}</button>
+      </div>
+    </div>`;
+
+  const ap = $("#reset-approve");
+  if (ap) ap.addEventListener("click", () => approveReset(state.code, myId));
+  $("#reset-decline").addEventListener("click", () => cancelReset(state.code));
+}
+
+function appendResetControl(pane) {
+  if (state.group?.resetRequest) return; // the banner is already handling it
+  const div = document.createElement("div");
+  div.className = "card danger-zone";
+  div.innerHTML = `
+    <h3>Reset club</h3>
+    <p class="muted small">Clear every film, rating and review and start the club fresh. The club and its members stay. Nothing happens until <b>every</b> member approves.</p>
+    <button class="btn small" id="request-reset">Request reset…</button>
+  `;
+  pane.appendChild(div);
+  $("#request-reset").addEventListener("click", () => {
+    if (confirm("Ask everyone to approve resetting the club? Nothing is deleted until all members approve.")) {
+      requestReset(state.code, getMemberId(), getName());
+    }
   });
 }
 
