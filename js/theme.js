@@ -12,6 +12,7 @@ const THEMES = [
   { id: "minimal",  name: "Minimal",        bg: "#ffffff", accent: "#16171a" },
   { id: "claude",   name: "Claude",         bg: "#f0eee6", accent: "#c96442" },
   { id: "web1",     name: "Early Internet", bg: "#c3c7cb", accent: "#0000cc" },
+  { id: "strokes",  name: "The Strokes",    bg: "#0a1aa8", accent: "#cc1f1f" },
   { id: "synth",    name: "Synthwave",      bg: "#0e0a1f", accent: "#ff4fd8" },
 ];
 const KEY = "cinewheel_theme";

@@ -383,6 +383,52 @@ textarea { resize: vertical; min-height: 70px; }
 [data-theme="festival"] .btn.primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); color: var(--accent-ink); }
 [data-theme="festival"] .deadline-pill { border-color: var(--accent); color: var(--accent); }
 
+/* 8. The Strokes — Win95 + GeoCities: cobalt desktop, beveled windows, pixel
+      headings, Times body, blue links, a hot red CTA. Square everything. */
+[data-theme="strokes"] {
+  --bg: #0a1aa8; --bg-soft: #ffffff; --panel: #ececec; --panel-2: #dcdcd4;
+  --line: #808080; --line-strong: #000000; --text: #111111; --muted: #555555;
+  --faint: #777777; --accent: #cc1f1f; --accent-hi: #e23b2f; --accent-ink: #ffffff;
+  --danger: #cc0000; --star-empty: #b0b0b0; --topbar-bg: #0a1aa8;
+  --radius: 0px;
+  --serif: "Pixelify Sans", "Courier New", monospace;
+  --sans: "Times New Roman", Times, serif;
+}
+[data-theme="strokes"] body { background: var(--bg); }
+[data-theme="strokes"] .topbar { color: #fff; border-bottom: 2px solid #000; }
+[data-theme="strokes"] .brand, [data-theme="strokes"] .group-name { color: #fff; }
+[data-theme="strokes"] .card, [data-theme="strokes"] .tile, [data-theme="strokes"] .superlative,
+[data-theme="strokes"] .modal-box, [data-theme="strokes"] .reset-box {
+  background: var(--panel); color: #111;
+  border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: 0 0 0 1px #000, 3px 3px 0 rgba(0, 0, 0, 0.3);
+}
+[data-theme="strokes"] .btn, [data-theme="strokes"] .chip {
+  background: #d4d0c8; color: #000; border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
+}
+[data-theme="strokes"] .btn:hover, [data-theme="strokes"] .chip:hover { color: #000; }
+[data-theme="strokes"] .btn:active, [data-theme="strokes"] .chip:active { border-color: #808080 #ffffff #ffffff #808080; }
+[data-theme="strokes"] .btn.primary { background: var(--accent); color: #fff; border-color: #f08a7e #7a0f0f #7a0f0f #f08a7e; }
+[data-theme="strokes"] .btn.primary:hover { background: var(--accent-hi); color: #fff; }
+[data-theme="strokes"] input, [data-theme="strokes"] textarea {
+  background: #fff; color: #111; border: 2px solid; border-color: #808080 #ffffff #ffffff #808080;
+}
+[data-theme="strokes"] a, [data-theme="strokes"] .text-link { color: #0000cc; text-decoration: underline; }
+[data-theme="strokes"] .tabs { border-bottom: 2px solid #000; }
+[data-theme="strokes"] .tab { color: #cfd6ff; }
+[data-theme="strokes"] .tab:hover { color: #fff; }
+[data-theme="strokes"] .tab.active { color: #fff; border-bottom: 3px solid var(--accent); }
+/* light text where it sits directly on the blue desktop */
+[data-theme="strokes"] #screen-landing .hero h1 { color: #fff; }
+[data-theme="strokes"] #screen-landing .lead { color: #d7dcff; }
+[data-theme="strokes"] #landing-error, [data-theme="strokes"] .error.center { color: #ffc2c2; }
+[data-theme="strokes"] .wheel-status { color: #d7dcff; }
+[data-theme="strokes"] .turn-order .small { color: #cfd6ff; }
+[data-theme="strokes"] .turn-arrow { color: #aab0ff; }
+[data-theme="strokes"] .turn-chip { color: #fff; border-color: #fff; }
+[data-theme="strokes"] .turn-chip.current { background: var(--accent); border-color: #fff; color: #fff; }
+[data-theme="strokes"] .tabpane > .muted { color: #d7dcff; }
+
 /* ---- theme picker popover ---- */
 .theme-pop {
   position: fixed; z-index: 120; min-width: 204px;
