@@ -132,6 +132,27 @@ function wireStaticUI() {
 
   // redraw (the wheel especially) when the theme changes
   window.addEventListener("cinewheel:themechange", () => { try { render(); } catch (_) {} });
+
+  // Web 1.0 window chrome: make the title-bar [X] actually do something — close
+  // the name dialog, decline the reset window, or roll a content card up like a
+  // Win95 window-shade (click it again to unroll). We hit-test the corner since
+  // the button itself is a CSS pseudo-element.
+  document.addEventListener("click", (e) => {
+    if (document.documentElement.getAttribute("data-theme") !== "strokes") return;
+    const win = e.target.closest(".card, .modal-box, .reset-box");
+    if (!win) return;
+    const r = win.getBoundingClientRect();
+    if (!(e.clientX >= r.right - 30 && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.top + 28)) return;
+    e.stopPropagation();
+    if (win.closest("#name-modal")) {
+      hide($("#name-modal"));
+      if (namePromiseResolve) { namePromiseResolve(); namePromiseResolve = null; }
+    } else if (win.classList.contains("reset-box")) {
+      if (state.code) cancelReset(state.code);
+    } else {
+      win.classList.toggle("rolled");
+    }
+  });
 }
 
 function updateMuteBtn() {
