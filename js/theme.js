@@ -6,9 +6,9 @@
 // ============================================================================
 
 const THEMES = [
-  { id: "a24",      name: "A24",            bg: "#ffffff", accent: "#0a0a0a" },
-  { id: "festival", name: "Festival Print", bg: "#ece2cd", accent: "#c2482e" },
-  { id: "strokes",  name: "The Strokes",    bg: "#0a1aa8", accent: "#cc1f1f" },
+  { id: "a24",      name: "Default", bg: "#ffffff", accent: "#0a0a0a" },
+  { id: "festival", name: "Cinema",  bg: "#ece2cd", accent: "#c2482e" },
+  { id: "strokes",  name: "Web 1.0", bg: "#0a1aa8", accent: "#cc1f1f" },
 ];
 const KEY = "cinewheel_theme";
 const DEFAULT = "a24";

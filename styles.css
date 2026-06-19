@@ -234,7 +234,7 @@ textarea { resize: vertical; min-height: 70px; }
 .danger-zone h3 { margin-top: 0; }
 
 /* ===========================================================================
-   THEME 1 — A24 : austere gallery editorial. Black & white, hairline rules,
+   THEME 1 — DEFAULT (A24 editorial) : black & white, hairline rules,
    everything LEFT-aligned, oversized uppercase grotesque, square, lots of air.
    =========================================================================== */
 [data-theme="a24"] {
@@ -247,6 +247,10 @@ textarea { resize: vertical; min-height: 70px; }
   --sans: "Archivo", system-ui, sans-serif;
 }
 [data-theme="a24"] body { background: var(--bg); }
+[data-theme="a24"] body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
 [data-theme="a24"] .topbar { padding: 18px 26px; border-bottom: 1px solid #111; }
 [data-theme="a24"] .brand { font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; font-size: 1.3rem; }
 [data-theme="a24"] h1, [data-theme="a24"] h2, [data-theme="a24"] h3, [data-theme="a24"] .film-title { text-transform: uppercase; font-weight: 800; letter-spacing: -0.01em; }
@@ -279,7 +283,7 @@ textarea { resize: vertical; min-height: 70px; }
 [data-theme="a24"] #wheel-canvas { border: 1px solid #111; }
 
 /* ===========================================================================
-   THEME 2 — FESTIVAL PRINT : a grainy printed programme. Paper + grain, double
+   THEME 2 — CINEMA (festival print) : a grainy printed programme. Paper, double
    ink rules, condensed Oswald caps over serif, one burnt-orange ink, square.
    =========================================================================== */
 [data-theme="festival"] {
@@ -291,9 +295,17 @@ textarea { resize: vertical; min-height: 70px; }
   --serif: Georgia, "Times New Roman", serif;
   --sans: Georgia, "Times New Roman", serif;
 }
-[data-theme="festival"] body { background: var(--bg); }
+[data-theme="festival"] body {
+  background-color: #ece2cd;
+  background-image: radial-gradient(125% 130% at 50% 0%, #f1e8d6 0%, #e6dbc2 65%, #ddd0b4 100%);
+}
+[data-theme="festival"] body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.11;
+  background-image: radial-gradient(circle, #211c14 0.8px, transparent 1.4px);
+  background-size: 5px 5px;
+}
 [data-theme="festival"] body::after {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.1;
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.14;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 /* masthead top bar */
@@ -324,7 +336,7 @@ textarea { resize: vertical; min-height: 70px; }
 [data-theme="festival"] #wheel-canvas { border: 3px double var(--line-strong); }
 
 /* ===========================================================================
-   THEME 3 — THE STROKES : Win95 + GeoCities desktop. Cobalt desktop, every card
+   THEME 3 — WEB 1.0 (Strokes / Win95) : cobalt desktop, every card
    is a beveled WINDOW with a navy title bar, folder tabs, pixel headings, bright
    wheel, hot-red CTA. Surface-aware text (light on desktop, dark in windows).
    =========================================================================== */
@@ -337,7 +349,15 @@ textarea { resize: vertical; min-height: 70px; }
   --serif: "Pixelify Sans", "Courier New", monospace;
   --sans: "Times New Roman", Times, serif;
 }
-[data-theme="strokes"] body { background: var(--bg); }
+[data-theme="strokes"] body {
+  background-color: #0a1aa8;
+  background-image: repeating-conic-gradient(#0a1aa8 0% 25%, #0c1cb6 0% 50%);
+  background-size: 6px 6px;
+}
+[data-theme="strokes"] body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0.07;
+  background-image: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0 1px, transparent 1px 3px);
+}
 [data-theme="strokes"] .topbar { color: #fff; border-bottom: 2px solid #000; }
 [data-theme="strokes"] .brand, [data-theme="strokes"] .group-name { color: #fff; }
 /* windows: beveled panel + navy title bar + faux close button */
