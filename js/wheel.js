@@ -1,18 +1,50 @@
 // ============================================================================
-//  The wheel: drawing, the satisfying spin animation, sound & confetti
-// ----------------------------------------------------------------------------
-//  Everyone watches the SAME spin: the spinner writes lastSpin {segments,
-//  winnerIndex, seed} to Firestore; every browser then animates that exact
-//  wheel via maybePlaySpin(). The winner is decided up front, so the easing
-//  always lands dead-centre on the chosen segment.
+//  The wheel: drawing, the satisfying spin animation, sound & confetti.
+//  Drawing is THEME-AWARE — each theme gets its own palette, ring, hub, pointer
+//  and label treatment (see wheelStyle), so the wheel is redesigned per theme.
 // ============================================================================
 
-// A curated, muted palette in keeping with the editorial look.
-const PALETTE = [
-  "#C7A36B", "#8C5A4A", "#5A6E5A", "#46566B", "#7A5A6E",
-  "#A9743F", "#6E6E58", "#5E7A72", "#9A5A4A", "#737A8C",
-  "#A98C5A", "#566A5E", "#84614F", "#6B5E72", "#88826F",
-];
+function wheelStyle() {
+  const t = document.documentElement.getAttribute("data-theme") || "a24";
+  const styles = {
+    // A24: stark black & white, alternating segments, thin minimal pointer
+    a24: {
+      alternate: ["#0a0a0a", "#ffffff"],
+      segStroke: "#111111", segStrokeW: 1.5, ring: "#111111", ringW: 2,
+      hubFill: "#0a0a0a", hubStroke: "#ffffff", hubR: 17,
+      pointerFill: "#0a0a0a", pointerStroke: "#ffffff", pointerW: 14,
+      labelFont: '800 14px "Archivo", system-ui, sans-serif', upper: true,
+      emptyText: "#9a9a9a", emptyFill: "rgba(0,0,0,0.05)",
+    },
+    // Festival: limited risograph ink palette, thick ink rules, solid pointer
+    festival: {
+      palette: ["#c2482e", "#211c14", "#7d8a6a", "#a98b3e", "#6b6048", "#9c5a3c"],
+      segStroke: "#211c14", segStrokeW: 2, ring: "#211c14", ringW: 3,
+      hubFill: "#211c14", hubStroke: "#ece2cd", hubR: 18,
+      pointerFill: "#c2482e", pointerStroke: "#211c14", pointerW: 18,
+      labelFont: '600 15px "Oswald", system-ui, sans-serif', upper: true,
+      labelColor: "#f6efdd", labelStroke: "#211c14",
+      emptyText: "#6b6048", emptyFill: "rgba(33,28,20,0.06)",
+    },
+    // The Strokes: bright GeoCities clip-art colours, thick black outlines, chunky
+    strokes: {
+      palette: ["#ff2424", "#0000cc", "#00a000", "#ffd000", "#cc00cc", "#00a8c0", "#ff7e00"],
+      segStroke: "#000000", segStrokeW: 3, ring: "#000000", ringW: 4,
+      hubFill: "#000000", hubStroke: "#ffff00", hubR: 20,
+      pointerFill: "#ffd000", pointerStroke: "#000000", pointerW: 22,
+      labelFont: '700 15px "Pixelify Sans", "Courier New", monospace', upper: false,
+      labelColor: "#ffffff", labelStroke: "#000000",
+      emptyText: "#ffffff", emptyFill: "rgba(255,255,255,0.14)",
+    },
+  };
+  return styles[t] || styles.a24;
+}
+
+function isDark(hex) {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b < 140;
+}
 
 // ---- audio ----------------------------------------------------------------
 let muted = false;
@@ -60,6 +92,7 @@ function burstConfetti() {
 
 // ---- drawing ---------------------------------------------------------------
 function drawWheel(ctx, size, segments, rotation, highlightIndex) {
+  const s = wheelStyle();
   const n = segments.length;
   const cx = size / 2, cy = size / 2, r = size / 2 - 8;
   const seg = (2 * Math.PI) / n;
@@ -68,21 +101,23 @@ function drawWheel(ctx, size, segments, rotation, highlightIndex) {
   for (let i = 0; i < n; i++) {
     const a0 = i * seg + rotation;
     const a1 = (i + 1) * seg + rotation;
+    const fill = s.alternate ? s.alternate[i % s.alternate.length] : s.palette[i % s.palette.length];
+
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, a0, a1);
     ctx.closePath();
-    ctx.fillStyle = PALETTE[i % PALETTE.length];
+    ctx.fillStyle = fill;
     ctx.fill();
     if (i === highlightIndex) {
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
       ctx.fill();
       ctx.restore();
     }
-    ctx.strokeStyle = "rgba(0,0,0,0.25)";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = s.segStroke;
+    ctx.lineWidth = s.segStrokeW;
     ctx.stroke();
 
     // label, drawn from the rim inward
@@ -91,37 +126,49 @@ function drawWheel(ctx, size, segments, rotation, highlightIndex) {
     ctx.rotate(a0 + seg / 2);
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    ctx.font = "600 15px system-ui, -apple-system, sans-serif";
-    const title = segments[i].title || "";
+    ctx.font = s.labelFont;
+    let title = segments[i].title || "";
+    if (s.upper) title = title.toUpperCase();
     const label = title.length > 18 ? title.slice(0, 17) + "…" : title;
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "rgba(0,0,0,0.45)";
-    ctx.strokeText(label, r - 14, 0);
-    ctx.fillStyle = "#ECE7DE";
+
+    let lc, ls;
+    if (s.alternate) { lc = isDark(fill) ? "#ffffff" : "#0a0a0a"; ls = null; }
+    else { lc = s.labelColor; ls = s.labelStroke; }
+    if (ls) { ctx.lineWidth = 3; ctx.strokeStyle = ls; ctx.strokeText(label, r - 14, 0); }
+    ctx.fillStyle = lc;
     ctx.fillText(label, r - 14, 0);
     ctx.restore();
   }
 
+  // outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+  ctx.strokeStyle = s.ring;
+  ctx.lineWidth = s.ringW;
+  ctx.stroke();
+
   // hub
   ctx.beginPath();
-  ctx.arc(cx, cy, 26, 0, 2 * Math.PI);
-  ctx.fillStyle = "#14151A";
+  ctx.arc(cx, cy, s.hubR, 0, 2 * Math.PI);
+  ctx.fillStyle = s.hubFill;
   ctx.fill();
-  ctx.strokeStyle = "#ECE7DE";
+  ctx.strokeStyle = s.hubStroke;
   ctx.lineWidth = 3;
   ctx.stroke();
 }
 
 function drawPointer(ctx, size) {
+  const s = wheelStyle();
   const cx = size / 2;
+  const w = s.pointerW;
   ctx.save();
-  ctx.fillStyle = "#C7A36B";
-  ctx.strokeStyle = "#14151A";
+  ctx.fillStyle = s.pointerFill;
+  ctx.strokeStyle = s.pointerStroke;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx - 18, 0);
-  ctx.lineTo(cx + 18, 0);
-  ctx.lineTo(cx, 36);
+  ctx.moveTo(cx - w, 0);
+  ctx.lineTo(cx + w, 0);
+  ctx.lineTo(cx, w * 2);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
@@ -130,15 +177,19 @@ function drawPointer(ctx, size) {
 
 // Static wheel shown on the Wheel tab.
 export function renderIdleWheel(canvas, movies) {
+  const s = wheelStyle();
   const ctx = canvas.getContext("2d");
   const size = canvas.width;
   if (!movies.length) {
     ctx.clearRect(0, 0, size, size);
-    ctx.fillStyle = "rgba(128,128,128,0.14)";
+    ctx.fillStyle = s.emptyFill;
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size / 2 - 8, 0, 2 * Math.PI);
     ctx.fill();
-    ctx.fillStyle = "#8C887F";
+    ctx.strokeStyle = s.ring;
+    ctx.lineWidth = s.ringW;
+    ctx.stroke();
+    ctx.fillStyle = s.emptyText;
     ctx.font = "16px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Add films to fill the wheel", size / 2, size / 2);

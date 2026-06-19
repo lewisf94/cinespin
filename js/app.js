@@ -129,6 +129,9 @@ function wireStaticUI() {
   // prefill join code from share link
   const g = new URLSearchParams(location.search).get("g");
   if (g) $("#join-code").value = normaliseCode(g);
+
+  // redraw (the wheel especially) when the theme changes
+  window.addEventListener("cinewheel:themechange", () => { try { render(); } catch (_) {} });
 }
 
 function updateMuteBtn() {

@@ -1,22 +1,17 @@
 // ============================================================================
-//  Theme switcher — five live, switchable looks, remembered in localStorage.
-//  Self-contained (no Firebase), so it also works on the setup screen. Each
-//  look is defined entirely in CSS under [data-theme="…"]; this just toggles
-//  the attribute on <html> and builds the picker popover.
+//  Theme switcher — three complete design systems, remembered in localStorage.
+//  Each look is defined entirely in CSS under [data-theme="…"] (plus a matching
+//  wheel style in wheel.js). This module toggles the attribute on <html>, builds
+//  the picker, and fires "cinewheel:themechange" so the app can redraw the wheel.
 // ============================================================================
 
 const THEMES = [
-  { id: "cinema",   name: "Cinema",         bg: "#0c0a0b", accent: "#e5b567" },
   { id: "a24",      name: "A24",            bg: "#ffffff", accent: "#0a0a0a" },
   { id: "festival", name: "Festival Print", bg: "#ece2cd", accent: "#c2482e" },
-  { id: "minimal",  name: "Minimal",        bg: "#ffffff", accent: "#16171a" },
-  { id: "claude",   name: "Claude",         bg: "#f0eee6", accent: "#c96442" },
-  { id: "web1",     name: "Early Internet", bg: "#c3c7cb", accent: "#0000cc" },
   { id: "strokes",  name: "The Strokes",    bg: "#0a1aa8", accent: "#cc1f1f" },
-  { id: "synth",    name: "Synthwave",      bg: "#0e0a1f", accent: "#ff4fd8" },
 ];
 const KEY = "cinewheel_theme";
-const DEFAULT = "cinema";
+const DEFAULT = "a24";
 
 function saved() {
   try { return localStorage.getItem(KEY) || DEFAULT; } catch (_) { return DEFAULT; }
@@ -29,6 +24,7 @@ function apply(id) {
   const meta = document.querySelector('meta[name="theme-color"]');
   const t = THEMES.find((x) => x.id === id);
   if (meta && t) meta.setAttribute("content", t.bg);
+  window.dispatchEvent(new CustomEvent("cinewheel:themechange", { detail: id }));
 }
 
 function buildPicker() {

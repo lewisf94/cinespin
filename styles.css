@@ -1,40 +1,24 @@
 /* ============================================================================
-   CineWheel — Editorial theme
-   Charcoal + paper, a single muted-amber accent, serif display headings over a
-   clean sans, hairline rules and generous whitespace.
+   CineWheel — three complete design systems (A24 / Festival Print / The Strokes)
+   The base below is theme-agnostic structure; each [data-theme] block is a full
+   redesign: layout, shapes, type, the wheel framing — not just colours.
+   Default values in :root mirror the A24 theme.
    ========================================================================== */
 :root {
-  --bg: #14151A;
-  --bg-soft: #1C1D24;
-  --panel: #191A20;
-  --panel-2: #21232B;
-  --line: #2A2C34;
-  --line-strong: #3A3C46;
-  --text: #ECE7DE;
-  --muted: #9A968D;
-  --faint: #6F6C65;
-  --accent: #C7A36B;
-  --accent-hi: #D6B281;
-  --accent-ink: #14151A;
-  --danger: #C97A6A;
-  --star-empty: #3A3A40;
-  --topbar-bg: rgba(12, 10, 11, 0.9);
-  --radius: 4px;
-  --maxw: 760px;
-  --serif: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --bg: #ffffff; --bg-soft: #f4f4f4; --panel: #ffffff; --panel-2: #f4f4f4;
+  --line: #111111; --line-strong: #000000; --text: #0a0a0a; --muted: #6b6b6b;
+  --faint: #9a9a9a; --accent: #0a0a0a; --accent-hi: #000000; --accent-ink: #ffffff;
+  --danger: #c0241c; --star-empty: #d6d6d6; --topbar-bg: rgba(255, 255, 255, 0.95);
+  --radius: 0px; --maxw: 880px;
+  --serif: "Archivo", system-ui, sans-serif;
+  --sans: "Archivo", system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 16px;
-  line-height: 1.6;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
+  background: var(--bg); color: var(--text); font-family: var(--sans);
+  font-size: 16px; line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3 { font-family: var(--serif); font-weight: 700; line-height: 1.18; letter-spacing: 0.2px; }
 a { color: var(--accent); text-underline-offset: 2px; }
@@ -48,18 +32,16 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .topbar {
   display: flex; align-items: center; gap: 14px;
   padding: 16px 22px; border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; z-index: 50;
-  background: var(--topbar-bg); backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 50; background: var(--topbar-bg); backdrop-filter: blur(8px);
 }
 .brand { font-family: var(--serif); font-weight: 800; font-size: 1.35rem; letter-spacing: 0.3px; }
 .topbar-group { display: flex; align-items: center; gap: 10px; }
 .group-name { font-weight: 600; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .chip {
-  background: transparent; color: var(--text);
-  border: 1px solid var(--line-strong); border-radius: var(--radius);
-  padding: 7px 13px; font-size: 0.82rem; font-family: var(--sans); cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  background: transparent; color: var(--text); border: 1px solid var(--line-strong);
+  border-radius: var(--radius); padding: 7px 13px; font-size: 0.82rem; font-family: var(--sans);
+  cursor: pointer; transition: border-color 0.15s, color 0.15s;
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 .code-chip { display: inline-flex; gap: 8px; align-items: center; }
@@ -70,26 +52,21 @@ a { color: var(--accent); text-underline-offset: 2px; }
 #main { max-width: var(--maxw); margin: 0 auto; padding: 40px 20px 80px; }
 .screen { animation: fade 0.3s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.card {
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
-}
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
 
 /* ---- inputs & buttons ---- */
 input, textarea {
-  width: 100%; background: var(--bg-soft); color: var(--text);
-  border: 1px solid var(--line-strong); border-radius: var(--radius);
-  padding: 12px 14px; font-size: 1rem; font-family: var(--sans);
+  width: 100%; background: var(--bg-soft); color: var(--text); border: 1px solid var(--line-strong);
+  border-radius: var(--radius); padding: 12px 14px; font-size: 1rem; font-family: var(--sans);
 }
 input::placeholder, textarea::placeholder { color: var(--faint); }
 input:focus, textarea:focus { outline: none; border-color: var(--accent); }
 textarea { resize: vertical; min-height: 70px; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  background: transparent; color: var(--text);
-  border: 1px solid var(--line-strong); border-radius: var(--radius);
-  padding: 11px 20px; font-size: 0.92rem; font-weight: 600; font-family: var(--sans);
-  cursor: pointer; letter-spacing: 0.02em;
+  background: transparent; color: var(--text); border: 1px solid var(--line-strong);
+  border-radius: var(--radius); padding: 11px 20px; font-size: 0.92rem; font-weight: 600;
+  font-family: var(--sans); cursor: pointer; letter-spacing: 0.02em;
   transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.06s;
 }
 .btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -101,11 +78,7 @@ textarea { resize: vertical; min-height: 70px; }
 .btn.small { padding: 8px 14px; font-size: 0.82rem; }
 .link-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.95rem; padding: 4px; }
 .link-btn:hover { color: var(--danger); }
-.text-link {
-  background: none; border: none; color: var(--muted); cursor: pointer;
-  text-decoration: underline; text-underline-offset: 2px;
-  font-size: 0.82rem; font-family: var(--sans);
-}
+.text-link { background: none; border: none; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; font-size: 0.82rem; font-family: var(--sans); }
 .text-link:hover { color: var(--accent); }
 
 /* ---- landing ---- */
@@ -123,11 +96,9 @@ textarea { resize: vertical; min-height: 70px; }
 /* ---- tabs ---- */
 .tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
 .tab {
-  background: none; border: none; color: var(--muted);
-  padding: 12px 16px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
-  font-family: var(--sans); letter-spacing: 0.03em;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  background: none; border: none; color: var(--muted); padding: 12px 16px; cursor: pointer;
+  font-size: 0.9rem; font-weight: 600; font-family: var(--sans); letter-spacing: 0.03em;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s;
 }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--text); border-bottom-color: var(--accent); }
@@ -243,165 +214,149 @@ textarea { resize: vertical; min-height: 70px; }
 .spin-caption.win { font-size: 2.1rem; color: var(--accent); animation: pop 0.4s ease; }
 @keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
 
+/* ---- theme picker popover ---- */
+.theme-pop { position: fixed; z-index: 120; min-width: 204px; background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 6px; box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45); animation: fade 0.15s ease; }
+.theme-opt { display: flex; align-items: center; gap: 11px; width: 100%; background: none; border: none; color: var(--text); cursor: pointer; padding: 9px 10px; border-radius: var(--radius); font-size: 0.9rem; text-align: left; font-family: var(--sans); }
+.theme-opt:hover { background: var(--panel-2); }
+.theme-swatch { width: 26px; height: 26px; border-radius: 6px; flex: none; border: 1px solid rgba(128, 128, 128, 0.4); }
+.theme-name { flex: 1; }
+.theme-opt.active { color: var(--accent); font-weight: 700; }
+.theme-opt.active .theme-swatch { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---- group reset (unanimous consent) ---- */
+#reset-banner { margin-bottom: 20px; }
+.reset-box { background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius); padding: 18px 20px; }
+.reset-head { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; }
+.reset-desc { color: var(--muted); font-size: 0.9rem; margin: 6px 0 10px; }
+.reset-progress { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 12px; }
+.reset-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.danger-zone { border-color: var(--line-strong); }
+.danger-zone h3 { margin-top: 0; }
+
 /* ===========================================================================
-   THEMES — switch live with the Theme button (js/theme.js). Each overrides the
-   variables above; some add a few targeted rules for a genuinely different feel.
+   THEME 1 — A24 : austere gallery editorial. Black & white, hairline rules,
+   everything LEFT-aligned, oversized uppercase grotesque, square, lots of air.
    =========================================================================== */
-
-/* 1. Cinema — dark theatre, crimson glow + gold, dramatic serif (default) */
-[data-theme="cinema"] {
-  --bg: #0c0a0b; --bg-soft: #171012; --panel: #181012; --panel-2: #211517;
-  --line: #33222a; --line-strong: #4a2f38; --text: #f3e9e0; --muted: #b59a93;
-  --faint: #7c6660; --accent: #e5b567; --accent-hi: #f0c77e; --accent-ink: #1a0e0e;
-  --danger: #e2685f; --star-empty: #3a2a2e; --topbar-bg: rgba(12, 10, 11, 0.9);
-  --radius: 4px;
-  --serif: "Playfair Display", Georgia, "Times New Roman", serif;
-}
-[data-theme="cinema"] body { background: radial-gradient(1000px 520px at 50% -12%, #2a0e14 0%, #0c0a0b 58%); }
-[data-theme="cinema"] .film-banner, [data-theme="cinema"] .sealed-banner { letter-spacing: 0.2em; }
-
-/* 2. Minimal — light, airy, near-grayscale, a single ink accent */
-[data-theme="minimal"] {
-  --bg: #ffffff; --bg-soft: #f6f6f7; --panel: #ffffff; --panel-2: #f3f4f6;
-  --line: #ececee; --line-strong: #d9dade; --text: #16171a; --muted: #71727a;
-  --faint: #a8a9b0; --accent: #16171a; --accent-hi: #000000; --accent-ink: #ffffff;
-  --danger: #b23a3a; --star-empty: #e1e2e6; --topbar-bg: rgba(255, 255, 255, 0.85);
-  --radius: 8px;
-  --serif: var(--sans);
-}
-[data-theme="minimal"] body { background: var(--bg); }
-[data-theme="minimal"] h1, [data-theme="minimal"] h2, [data-theme="minimal"] h3,
-[data-theme="minimal"] .brand, [data-theme="minimal"] .film-title { font-weight: 600; letter-spacing: -0.015em; }
-[data-theme="minimal"] .deadline-pill { border-color: var(--line-strong); color: var(--muted); }
-
-/* 3. Claude — warm cream paper, clay accent, soft and friendly */
-[data-theme="claude"] {
-  --bg: #f0eee6; --bg-soft: #faf9f5; --panel: #fbfaf6; --panel-2: #f2f0e8;
-  --line: #e6e3d9; --line-strong: #d7d3c5; --text: #2b2a26; --muted: #6b6862;
-  --faint: #9a968b; --accent: #c96442; --accent-hi: #d97757; --accent-ink: #ffffff;
-  --danger: #bc4b3c; --star-empty: #dad6ca; --topbar-bg: rgba(240, 238, 230, 0.9);
-  --radius: 12px;
-  --serif: Georgia, "Times New Roman", serif;
-}
-[data-theme="claude"] body { background: var(--bg); }
-
-/* 4. Early Internet — polished Web 1.0: silver, Times, blue links, beveled */
-[data-theme="web1"] {
-  --bg: #c3c7cb; --bg-soft: #ffffff; --panel: #ffffff; --panel-2: #ececec;
-  --line: #808080; --line-strong: #000000; --text: #111111; --muted: #444444;
-  --faint: #666666; --accent: #0000cc; --accent-hi: #0000ee; --accent-ink: #ffffff;
-  --danger: #cc0000; --star-empty: #9a9a9a; --topbar-bg: #c3c7cb;
-  --radius: 0px;
-  --serif: "Times New Roman", Times, serif;
-  --sans: "Times New Roman", Times, serif;
-}
-[data-theme="web1"] body { background: var(--bg); }
-[data-theme="web1"] .topbar { box-shadow: inset 0 -2px 0 #808080; border-bottom: 2px solid #fff; }
-[data-theme="web1"] .card, [data-theme="web1"] .tile, [data-theme="web1"] .superlative,
-[data-theme="web1"] .modal-box, [data-theme="web1"] .reset-box { border: 2px groove #ffffff; }
-[data-theme="web1"] .btn, [data-theme="web1"] .chip { background: #d4d0c8; color: #000; border: 2px outset #ffffff; }
-[data-theme="web1"] .btn:hover, [data-theme="web1"] .chip:hover { color: #000; border-color: #fff; }
-[data-theme="web1"] .btn:active, [data-theme="web1"] .chip:active { border-style: inset; }
-[data-theme="web1"] .btn.primary { background: #d4d0c8; color: #000; border: 2px outset #ffffff; font-weight: 700; }
-[data-theme="web1"] a, [data-theme="web1"] .text-link { color: #0000cc; text-decoration: underline; }
-[data-theme="web1"] input, [data-theme="web1"] textarea { border: 2px inset #fff; background: #fff; }
-[data-theme="web1"] .tab { border: 2px outset #fff; border-bottom: none; background: #d4d0c8; color: #000; margin-right: 2px; }
-[data-theme="web1"] .tab.active { background: #fff; }
-
-/* 5. Synthwave — neon magenta + cyan on indigo-black, retro-future glow */
-[data-theme="synth"] {
-  --bg: #0e0a1f; --bg-soft: #15102b; --panel: #16112e; --panel-2: #1e183c;
-  --line: #2c2350; --line-strong: #41356f; --text: #f4ecff; --muted: #a99fd0;
-  --faint: #6f6699; --accent: #ff4fd8; --accent-hi: #ff7be3; --accent-ink: #0e0a1f;
-  --danger: #ff6b81; --star-empty: #332a55; --topbar-bg: rgba(14, 10, 31, 0.85);
-  --radius: 10px;
-  --serif: var(--sans);
-}
-[data-theme="synth"] body { background: radial-gradient(900px 520px at 50% -12%, #3a1170 0%, #0e0a1f 55%); }
-[data-theme="synth"] h1, [data-theme="synth"] h2, [data-theme="synth"] h3,
-[data-theme="synth"] .brand { font-weight: 800; letter-spacing: 0.01em; }
-[data-theme="synth"] .btn.primary {
-  background: linear-gradient(90deg, #ff4fd8, #7a5cff); border-color: transparent; color: #fff;
-  box-shadow: 0 0 16px rgba(255, 79, 216, 0.45);
-}
-[data-theme="synth"] .btn.primary:hover { background: linear-gradient(90deg, #ff7be3, #8f74ff); color: #fff; }
-[data-theme="synth"] .tab.active { color: #fff; text-shadow: 0 0 10px rgba(255, 79, 216, 0.55); }
-[data-theme="synth"] .deadline-pill, [data-theme="synth"] .turn-chip.current { box-shadow: 0 0 10px rgba(255, 79, 216, 0.35); }
-
-/* 6. A24 — stark editorial black & white, grotesque, uppercase, hairline rules */
 [data-theme="a24"] {
   --bg: #ffffff; --bg-soft: #f4f4f4; --panel: #ffffff; --panel-2: #f4f4f4;
   --line: #111111; --line-strong: #000000; --text: #0a0a0a; --muted: #6b6b6b;
   --faint: #9a9a9a; --accent: #0a0a0a; --accent-hi: #000000; --accent-ink: #ffffff;
   --danger: #c0241c; --star-empty: #d6d6d6; --topbar-bg: rgba(255, 255, 255, 0.95);
-  --radius: 0px;
+  --radius: 0px; --maxw: 880px;
   --serif: "Archivo", system-ui, sans-serif;
   --sans: "Archivo", system-ui, sans-serif;
 }
 [data-theme="a24"] body { background: var(--bg); }
-[data-theme="a24"] h1, [data-theme="a24"] h2, [data-theme="a24"] h3,
-[data-theme="a24"] .brand, [data-theme="a24"] .film-title { text-transform: uppercase; font-weight: 800; letter-spacing: -0.01em; }
+[data-theme="a24"] .topbar { padding: 18px 26px; border-bottom: 1px solid #111; }
+[data-theme="a24"] .brand { font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; font-size: 1.3rem; }
+[data-theme="a24"] h1, [data-theme="a24"] h2, [data-theme="a24"] h3, [data-theme="a24"] .film-title { text-transform: uppercase; font-weight: 800; letter-spacing: -0.01em; }
 [data-theme="a24"] .film-banner, [data-theme="a24"] .sealed-banner, [data-theme="a24"] .tab,
-[data-theme="a24"] .tile-label, [data-theme="a24"] .sup-label, [data-theme="a24"] .reset-progress { text-transform: uppercase; letter-spacing: 0.14em; }
+[data-theme="a24"] .tile-label, [data-theme="a24"] .sup-label, [data-theme="a24"] .reset-progress,
+[data-theme="a24"] .turn-order .small { text-transform: uppercase; letter-spacing: 0.16em; }
+/* left-aligned, oversized editorial landing + film card */
+[data-theme="a24"] .hero { text-align: left; margin: 16px 0 44px; }
+[data-theme="a24"] .hero h1 { font-size: 3.4rem; line-height: 1.02; }
+[data-theme="a24"] .lead { margin: 0; max-width: 600px; }
+[data-theme="a24"] .film-card { text-align: left; padding: 36px 30px; }
+[data-theme="a24"] .film-title { font-size: 2.7rem; }
+[data-theme="a24"] .film-meta, [data-theme="a24"] .deadline-row,
+[data-theme="a24"] .round-progress, [data-theme="a24"] .watch-actions { justify-content: flex-start; }
+[data-theme="a24"] .film-banner { display: block; border-bottom: 1px solid #111; padding-bottom: 10px; margin-bottom: 4px; }
+[data-theme="a24"] .rp-count { font-size: 2.1rem; }
+/* hairline cards, no shadow, square */
 [data-theme="a24"] .card, [data-theme="a24"] .tile, [data-theme="a24"] .superlative,
-[data-theme="a24"] .modal-box, [data-theme="a24"] .reset-box { border: 1px solid var(--line); }
+[data-theme="a24"] .modal-box, [data-theme="a24"] .reset-box { border: 1px solid var(--line); box-shadow: none; }
+[data-theme="a24"] .deadline-pill, [data-theme="a24"] .ack-pill, [data-theme="a24"] .sealed-banner,
+[data-theme="a24"] .turn-chip { border-radius: 0; }
 [data-theme="a24"] .btn { border: 1px solid #111; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
 [data-theme="a24"] .btn:hover { color: #000; border-color: #000; }
 [data-theme="a24"] .btn.primary { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
 [data-theme="a24"] .btn.primary:hover { background: #000; color: #fff; }
 [data-theme="a24"] a, [data-theme="a24"] .text-link { color: #0a0a0a; text-decoration: underline; }
-[data-theme="a24"] .tabs { border-bottom: 1px solid #111; }
-[data-theme="a24"] .tab.active { color: #000; border-bottom: 2px solid #000; }
+[data-theme="a24"] .tabs { border-bottom: 1px solid #111; gap: 0; }
+[data-theme="a24"] .tab { font-size: 0.82rem; padding: 14px 18px 12px; }
+[data-theme="a24"] .tab.active { color: #000; border-bottom: 3px solid #000; }
+[data-theme="a24"] #wheel-canvas { border: 1px solid #111; }
 
-/* 7. Festival Print — warm paper with grain, condensed headlines, spot ink */
+/* ===========================================================================
+   THEME 2 — FESTIVAL PRINT : a grainy printed programme. Paper + grain, double
+   ink rules, condensed Oswald caps over serif, one burnt-orange ink, square.
+   =========================================================================== */
 [data-theme="festival"] {
   --bg: #ece2cd; --bg-soft: #f3ebd9; --panel: #f3ebd9; --panel-2: #e7dcc2;
   --line: #c8b994; --line-strong: #211c14; --text: #211c14; --muted: #6b6048;
   --faint: #9a8c6e; --accent: #c2482e; --accent-hi: #d4543a; --accent-ink: #f6efdd;
-  --danger: #a8321f; --star-empty: #cabb96; --topbar-bg: rgba(236, 226, 205, 0.95);
-  --radius: 0px;
+  --danger: #a8321f; --star-empty: #cabb96; --topbar-bg: rgba(236, 226, 205, 0.96);
+  --radius: 0px; --maxw: 700px;
   --serif: Georgia, "Times New Roman", serif;
   --sans: Georgia, "Times New Roman", serif;
 }
 [data-theme="festival"] body { background: var(--bg); }
 [data-theme="festival"] body::after {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.09;
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-[data-theme="festival"] h1, [data-theme="festival"] h2, [data-theme="festival"] h3,
-[data-theme="festival"] .brand, [data-theme="festival"] .film-title {
+/* masthead top bar */
+[data-theme="festival"] .topbar { border-top: 5px solid var(--line-strong); border-bottom: 3px double var(--line-strong); }
+[data-theme="festival"] .brand { font-family: "Oswald", system-ui, sans-serif; text-transform: uppercase; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.06em; }
+[data-theme="festival"] h1, [data-theme="festival"] h2, [data-theme="festival"] h3, [data-theme="festival"] .film-title {
   font-family: "Oswald", system-ui, sans-serif; text-transform: uppercase; font-weight: 600; letter-spacing: 0.02em;
 }
 [data-theme="festival"] .film-banner, [data-theme="festival"] .sealed-banner, [data-theme="festival"] .tab,
-[data-theme="festival"] .sup-label, [data-theme="festival"] .tile-label, [data-theme="festival"] .reset-progress {
-  font-family: "Oswald", system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.14em;
+[data-theme="festival"] .sup-label, [data-theme="festival"] .tile-label, [data-theme="festival"] .reset-progress,
+[data-theme="festival"] .rp-label, [data-theme="festival"] .turn-order .small {
+  font-family: "Oswald", system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.16em;
 }
+[data-theme="festival"] .film-title { font-size: 2.5rem; }
+/* double-ruled print blocks */
 [data-theme="festival"] .card, [data-theme="festival"] .tile, [data-theme="festival"] .superlative,
-[data-theme="festival"] .modal-box, [data-theme="festival"] .reset-box { border: 1px solid var(--line-strong); }
+[data-theme="festival"] .modal-box, [data-theme="festival"] .reset-box { border: 3px double var(--line-strong); }
+[data-theme="festival"] .film-card { border-width: 3px; }
+[data-theme="festival"] .film-banner { display: inline-block; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); padding: 4px 0; }
 [data-theme="festival"] .btn { border: 1px solid var(--line-strong); }
 [data-theme="festival"] .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 [data-theme="festival"] .btn.primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); color: var(--accent-ink); }
+[data-theme="festival"] .deadline-pill, [data-theme="festival"] .sealed-banner, [data-theme="festival"] .ack-pill,
+[data-theme="festival"] .turn-chip { border-radius: 0; }
 [data-theme="festival"] .deadline-pill { border-color: var(--accent); color: var(--accent); }
+[data-theme="festival"] .tabs { border-top: 1px solid var(--line-strong); border-bottom: 3px double var(--line-strong); }
+[data-theme="festival"] .tab.active { border-bottom: 3px solid var(--accent); }
+[data-theme="festival"] #wheel-canvas { border: 3px double var(--line-strong); }
 
-/* 8. The Strokes — Win95 + GeoCities: cobalt desktop, beveled windows, pixel
-      headings, Times body, blue links, a hot red CTA. Square everything. */
+/* ===========================================================================
+   THEME 3 — THE STROKES : Win95 + GeoCities desktop. Cobalt desktop, every card
+   is a beveled WINDOW with a navy title bar, folder tabs, pixel headings, bright
+   wheel, hot-red CTA. Surface-aware text (light on desktop, dark in windows).
+   =========================================================================== */
 [data-theme="strokes"] {
   --bg: #0a1aa8; --bg-soft: #ffffff; --panel: #ececec; --panel-2: #dcdcd4;
   --line: #808080; --line-strong: #000000; --text: #111111; --muted: #555555;
   --faint: #777777; --accent: #cc1f1f; --accent-hi: #e23b2f; --accent-ink: #ffffff;
   --danger: #cc0000; --star-empty: #b0b0b0; --topbar-bg: #0a1aa8;
-  --radius: 0px;
+  --radius: 0px; --maxw: 820px;
   --serif: "Pixelify Sans", "Courier New", monospace;
   --sans: "Times New Roman", Times, serif;
 }
 [data-theme="strokes"] body { background: var(--bg); }
 [data-theme="strokes"] .topbar { color: #fff; border-bottom: 2px solid #000; }
 [data-theme="strokes"] .brand, [data-theme="strokes"] .group-name { color: #fff; }
-[data-theme="strokes"] .card, [data-theme="strokes"] .tile, [data-theme="strokes"] .superlative,
-[data-theme="strokes"] .modal-box, [data-theme="strokes"] .reset-box {
-  background: var(--panel); color: #111;
+/* windows: beveled panel + navy title bar + faux close button */
+[data-theme="strokes"] .card, [data-theme="strokes"] .modal-box, [data-theme="strokes"] .reset-box {
+  position: relative; padding-top: 36px; background: var(--panel); color: #111;
   border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
-  box-shadow: 0 0 0 1px #000, 3px 3px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px #000, 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+[data-theme="strokes"] .card::before, [data-theme="strokes"] .modal-box::before, [data-theme="strokes"] .reset-box::before {
+  content: ""; position: absolute; top: 3px; left: 3px; right: 3px; height: 22px;
+  background: linear-gradient(90deg, #000088, #1840d8);
+}
+[data-theme="strokes"] .card::after, [data-theme="strokes"] .modal-box::after, [data-theme="strokes"] .reset-box::after {
+  content: "X"; position: absolute; top: 5px; right: 6px; width: 18px; height: 16px;
+  background: #d4d0c8; color: #000; font-family: var(--sans); font-size: 11px; font-weight: 700;
+  line-height: 14px; text-align: center; border: 1px solid; border-color: #ffffff #808080 #808080 #ffffff;
+}
+[data-theme="strokes"] .tile, [data-theme="strokes"] .superlative {
+  background: var(--panel); color: #111; border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
 }
 [data-theme="strokes"] .btn, [data-theme="strokes"] .chip {
   background: #d4d0c8; color: #000; border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
@@ -410,15 +365,17 @@ textarea { resize: vertical; min-height: 70px; }
 [data-theme="strokes"] .btn:active, [data-theme="strokes"] .chip:active { border-color: #808080 #ffffff #ffffff #808080; }
 [data-theme="strokes"] .btn.primary { background: var(--accent); color: #fff; border-color: #f08a7e #7a0f0f #7a0f0f #f08a7e; }
 [data-theme="strokes"] .btn.primary:hover { background: var(--accent-hi); color: #fff; }
-[data-theme="strokes"] input, [data-theme="strokes"] textarea {
-  background: #fff; color: #111; border: 2px solid; border-color: #808080 #ffffff #ffffff #808080;
-}
+[data-theme="strokes"] input, [data-theme="strokes"] textarea { background: #fff; color: #111; border: 2px solid; border-color: #808080 #ffffff #ffffff #808080; }
 [data-theme="strokes"] a, [data-theme="strokes"] .text-link { color: #0000cc; text-decoration: underline; }
-[data-theme="strokes"] .tabs { border-bottom: 2px solid #000; }
-[data-theme="strokes"] .tab { color: #cfd6ff; }
-[data-theme="strokes"] .tab:hover { color: #fff; }
-[data-theme="strokes"] .tab.active { color: #fff; border-bottom: 3px solid var(--accent); }
-/* light text where it sits directly on the blue desktop */
+/* folder tabs */
+[data-theme="strokes"] .tabs { border-bottom: 2px solid #000; gap: 3px; }
+[data-theme="strokes"] .tab {
+  background: #d4d0c8; color: #000; border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
+  border-bottom: none; margin-bottom: 0; padding: 9px 14px;
+}
+[data-theme="strokes"] .tab.active { background: #ececec; color: #000; border-bottom: none; }
+[data-theme="strokes"] #wheel-canvas { background: #fff; border: 2px solid; border-color: #808080 #ffffff #ffffff #808080; }
+/* light text where it sits on the cobalt desktop (outside windows) */
 [data-theme="strokes"] #screen-landing .hero h1 { color: #fff; }
 [data-theme="strokes"] #screen-landing .lead { color: #d7dcff; }
 [data-theme="strokes"] #landing-error, [data-theme="strokes"] .error.center { color: #ffc2c2; }
@@ -433,8 +390,6 @@ textarea { resize: vertical; min-height: 70px; }
    Mobile / responsive — sits last so it applies across every theme
    =========================================================================== */
 @media (max-width: 640px) {
-  /* top bar: let it wrap, shrink chips, truncate long names, drop the
-     "Copy" label (the code still copies on tap) */
   .topbar { flex-wrap: wrap; padding: 10px 14px; gap: 8px 10px; }
   .brand { font-size: 1.15rem; }
   .topbar-right { gap: 6px; }
@@ -446,15 +401,22 @@ textarea { resize: vertical; min-height: 70px; }
   #main { padding: 24px 14px 64px; }
   .card { padding: 17px; }
   .film-card { padding: 24px 16px; }
+  [data-theme="a24"] .film-card { padding: 24px 18px; }
+  [data-theme="strokes"] .card, [data-theme="strokes"] .modal-box, [data-theme="strokes"] .reset-box { padding-top: 34px; }
 
   .hero { margin: 12px 0 26px; }
   .hero h1 { font-size: 1.9rem; }
+  [data-theme="a24"] .hero { text-align: center; }
+  [data-theme="a24"] .hero h1 { font-size: 2.2rem; }
+  [data-theme="a24"] .film-card { text-align: center; }
+  [data-theme="a24"] .film-meta, [data-theme="a24"] .deadline-row,
+  [data-theme="a24"] .round-progress, [data-theme="a24"] .watch-actions { justify-content: center; }
   .lead { font-size: 1rem; }
   .film-title { font-size: 1.6rem; }
+  [data-theme="a24"] .film-title { font-size: 1.7rem; }
+  [data-theme="festival"] .film-title { font-size: 1.9rem; }
   .film-title, .movie-title, .lb-title, .watched-head h3, .spin-caption { overflow-wrap: anywhere; }
 
-  /* tabs never clip: they scroll horizontally if the (tracked, uppercase)
-     labels in some themes get too wide */
   .tabs { gap: 2px; overflow-x: auto; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { flex: 0 0 auto; white-space: nowrap; padding: 10px 11px; font-size: 0.82rem; }
@@ -473,32 +435,3 @@ textarea { resize: vertical; min-height: 70px; }
   .modal-box { padding: 22px; }
   .theme-pop { max-height: 72vh; overflow-y: auto; }
 }
-
-/* ---- theme picker popover ---- */
-.theme-pop {
-  position: fixed; z-index: 120; min-width: 204px;
-  background: var(--panel); border: 1px solid var(--line-strong);
-  border-radius: var(--radius); padding: 6px; box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
-  animation: fade 0.15s ease;
-}
-.theme-opt {
-  display: flex; align-items: center; gap: 11px; width: 100%;
-  background: none; border: none; color: var(--text); cursor: pointer;
-  padding: 9px 10px; border-radius: var(--radius); font-size: 0.9rem; text-align: left;
-  font-family: var(--sans);
-}
-.theme-opt:hover { background: var(--panel-2); }
-.theme-swatch { width: 26px; height: 26px; border-radius: 6px; flex: none; border: 1px solid rgba(128, 128, 128, 0.4); }
-.theme-name { flex: 1; }
-.theme-opt.active { color: var(--accent); font-weight: 700; }
-.theme-opt.active .theme-swatch { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-/* ---- group reset (unanimous consent) ---- */
-#reset-banner { margin-bottom: 20px; }
-.reset-box { background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius); padding: 18px 20px; }
-.reset-head { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; }
-.reset-desc { color: var(--muted); font-size: 0.9rem; margin: 6px 0 10px; }
-.reset-progress { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 12px; }
-.reset-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.danger-zone { border-color: var(--line-strong); }
-.danger-zone h3 { margin-top: 0; }
