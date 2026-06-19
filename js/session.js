@@ -12,9 +12,8 @@ const MEMBER_ID_KEY = "spinema_member_id";
 const NAME_KEY = "spinema_name";
 const LAST_GROUP_KEY = "spinema_last_group";
 
-// One-time migration: the app was renamed (CineWheel -> Spinema). Copy any old
-// "cinewheel_" localStorage keys to the new "spinema_" names so existing
-// browsers keep their identity, display name and last group.
+// One-time migration: copy any legacy "cinewheel_" localStorage keys to the new
+// "spinema_" names so existing browsers keep their identity, name and last group.
 try {
   const old = [];
   for (let i = 0; i < localStorage.length; i++) {
