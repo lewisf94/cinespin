@@ -248,7 +248,7 @@ textarea { resize: vertical; min-height: 70px; }
 }
 [data-theme="a24"] body { background: var(--bg); }
 [data-theme="a24"] body::after {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0.06;
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0.14;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 [data-theme="a24"] .topbar { padding: 18px 26px; border-bottom: 1px solid #111; }
@@ -297,15 +297,13 @@ textarea { resize: vertical; min-height: 70px; }
 }
 [data-theme="festival"] body {
   background-color: #ece2cd;
-  background-image: radial-gradient(125% 130% at 50% 0%, #f1e8d6 0%, #e6dbc2 65%, #ddd0b4 100%);
-}
-[data-theme="festival"] body::before {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.11;
-  background-image: radial-gradient(circle, #211c14 0.8px, transparent 1.4px);
-  background-size: 5px 5px;
+  background-image:
+    radial-gradient(circle, rgba(33, 28, 20, 0.13) 0.9px, transparent 1.6px),
+    radial-gradient(125% 130% at 50% 0%, #f1e8d6 0%, #e6dbc2 65%, #ddd0b4 100%);
+  background-size: 5px 5px, auto;
 }
 [data-theme="festival"] body::after {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.14;
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.12;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 /* masthead top bar */
@@ -322,7 +320,11 @@ textarea { resize: vertical; min-height: 70px; }
 [data-theme="festival"] .film-title { font-size: 2.5rem; }
 /* double-ruled print blocks */
 [data-theme="festival"] .card, [data-theme="festival"] .tile, [data-theme="festival"] .superlative,
-[data-theme="festival"] .modal-box, [data-theme="festival"] .reset-box { border: 3px double var(--line-strong); }
+[data-theme="festival"] .modal-box, [data-theme="festival"] .reset-box {
+  border: 3px double var(--line-strong);
+  background-image: radial-gradient(circle, rgba(33, 28, 20, 0.09) 0.9px, transparent 1.6px);
+  background-size: 5px 5px;
+}
 [data-theme="festival"] .film-card { border-width: 3px; }
 [data-theme="festival"] .film-banner { display: inline-block; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); padding: 4px 0; }
 [data-theme="festival"] .btn { border: 1px solid var(--line-strong); }

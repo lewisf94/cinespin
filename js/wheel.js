@@ -46,6 +46,18 @@ function isDark(hex) {
   return 0.299 * r + 0.587 * g + 0.114 * b < 140;
 }
 
+// Size the canvas backing store to the device pixel ratio so the wheel is crisp
+// on retina / mobile, while we keep drawing in logical (CSS-pixel) coordinates.
+function setupHiDPI(canvas, logical) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width = Math.round(logical * dpr);
+  canvas.height = Math.round(logical * dpr);
+  canvas.style.width = logical + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
 // ---- audio ----------------------------------------------------------------
 let muted = false;
 let audioCtx = null;
@@ -97,6 +109,8 @@ function drawWheel(ctx, size, segments, rotation, highlightIndex) {
   const cx = size / 2, cy = size / 2, r = size / 2 - 8;
   const seg = (2 * Math.PI) / n;
   ctx.clearRect(0, 0, size, size);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
 
   for (let i = 0; i < n; i++) {
     const a0 = i * seg + rotation;
@@ -162,6 +176,7 @@ function drawPointer(ctx, size) {
   const cx = size / 2;
   const w = s.pointerW;
   ctx.save();
+  ctx.lineJoin = "round";
   ctx.fillStyle = s.pointerFill;
   ctx.strokeStyle = s.pointerStroke;
   ctx.lineWidth = 2;
@@ -178,8 +193,8 @@ function drawPointer(ctx, size) {
 // Static wheel shown on the Wheel tab.
 export function renderIdleWheel(canvas, movies) {
   const s = wheelStyle();
-  const ctx = canvas.getContext("2d");
-  const size = canvas.width;
+  const size = 460;
+  const ctx = setupHiDPI(canvas, size);
   if (!movies.length) {
     ctx.clearRect(0, 0, size, size);
     ctx.fillStyle = s.emptyFill;
@@ -223,8 +238,8 @@ function playSpinOverlay(spin, onDone) {
 
   const canvas = overlay.querySelector(".spin-canvas");
   const caption = overlay.querySelector(".spin-caption");
-  const ctx = canvas.getContext("2d");
-  const size = canvas.width;
+  const size = 500;
+  const ctx = setupHiDPI(canvas, size);
   const seg = (2 * Math.PI) / n;
 
   // Land the winner's centre under the top pointer (-90°), plus full spins.
