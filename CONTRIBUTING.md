@@ -29,4 +29,4 @@ Test multiplayer by opening a second browser/profile and joining the same code.
 
 ## Deploy
 
-Push to `main`; GitHub Pages redeploys to https://lewisf94.github.io/CineWheel/.
+Push to `main`; GitHub Pages redeploys to https://lewisf94.github.io/spinema/.

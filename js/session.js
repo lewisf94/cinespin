@@ -8,9 +8,24 @@
 
 import { auth, signInAnonymously, onAuthStateChanged, isConfigured } from "./firebase.js";
 
-const MEMBER_ID_KEY = "cinewheel_member_id";
-const NAME_KEY = "cinewheel_name";
-const LAST_GROUP_KEY = "cinewheel_last_group";
+const MEMBER_ID_KEY = "spinema_member_id";
+const NAME_KEY = "spinema_name";
+const LAST_GROUP_KEY = "spinema_last_group";
+
+// One-time migration: the app was renamed (CineWheel -> Spinema). Copy any old
+// "cinewheel_" localStorage keys to the new "spinema_" names so existing
+// browsers keep their identity, display name and last group.
+try {
+  const old = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.indexOf("cinewheel_") === 0) old.push(k);
+  }
+  old.forEach((k) => {
+    const nk = "spinema_" + k.slice(10);
+    if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+  });
+} catch (_) {}
 
 export function getMemberId() {
   let id = localStorage.getItem(MEMBER_ID_KEY);

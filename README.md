@@ -1,4 +1,4 @@
-# CineWheel
+# Spinema
 
 A film-club wheel for groups of friends. Add films to a wheel, take turns each
 week spinning to pick what to watch, set a watch-by deadline, then rate (in
@@ -33,25 +33,25 @@ club is in, with stats along the way.
 
 ## One-time setup (~5–10 minutes)
 
-CineWheel is a static site, so it needs a free **Firebase** project to store the
+Spinema is a static site, so it needs a free **Firebase** project to store the
 shared data. You only do this once.
 
 ### 1. Create a Firebase project
 1. Go to **<https://console.firebase.google.com>** and sign in with a Google account.
-2. Click **Add project**, give it any name (e.g. `cinewheel`), and continue.
+2. Click **Add project**, give it any name (e.g. `spinema`), and continue.
    You can disable Google Analytics when asked.
 
 ### 2. Register a Web App and copy the config
 1. On the project home, click the **Web icon `</>`** ("Add app").
-2. Give it a nickname (e.g. `cinewheel-web`) and click **Register app**.
+2. Give it a nickname (e.g. `spinema-web`) and click **Register app**.
    (You do **not** need Firebase Hosting.)
 3. You'll see a `firebaseConfig` object like this — keep this tab open:
    ```js
    const firebaseConfig = {
      apiKey: "AIza…",
-     authDomain: "cinewheel-xxxx.firebaseapp.com",
-     projectId: "cinewheel-xxxx",
-     storageBucket: "cinewheel-xxxx.appspot.com",
+     authDomain: "spinema-xxxx.firebaseapp.com",
+     projectId: "spinema-xxxx",
+     storageBucket: "spinema-xxxx.appspot.com",
      messagingSenderId: "1234567890",
      appId: "1:1234567890:web:abcdef…",
    };
@@ -91,7 +91,7 @@ shared data. You only do this once.
 3. Under **Build and deployment → Source**, choose **Deploy from a branch**.
 4. Pick branch **`main`**, folder **`/ (root)`**, and **Save**.
 5. After a minute your site is live at:
-   **`https://lewisf94.github.io/CineWheel/`**
+   **`https://lewisf94.github.io/spinema/`**
 
 Share that link (or the in-app club code) with your friends and you're set.
 
@@ -103,7 +103,7 @@ Because the app uses JavaScript modules, open it through a local web server
 (not by double-clicking the file). With your Firebase config already filled in:
 
 ```bash
-cd CineWheel
+cd spinema
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```

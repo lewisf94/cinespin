@@ -1,5 +1,5 @@
 // ============================================================================
-//  CineWheel — app orchestration: routing, live data, rendering, actions
+//  Spinema — app orchestration: routing, live data, rendering, actions
 // ============================================================================
 
 import { isConfigured, db, doc, collection, onSnapshot } from "./firebase.js";
@@ -61,7 +61,7 @@ let resetting = false; // guards against firing performReset repeatedly
 
 // ---- boot ------------------------------------------------------------------
 async function init() {
-  setMuted(localStorage.getItem("cinewheel_muted") === "1");
+  setMuted(localStorage.getItem("spinema_muted") === "1");
   updateMuteBtn();
   wireStaticUI();
 
@@ -100,7 +100,7 @@ async function init() {
 function wireStaticUI() {
   $("#mute-btn").addEventListener("click", () => {
     setMuted(!isMuted());
-    localStorage.setItem("cinewheel_muted", isMuted() ? "1" : "0");
+    localStorage.setItem("spinema_muted", isMuted() ? "1" : "0");
     updateMuteBtn();
   });
   $("#who-am-i").addEventListener("click", () => promptName());
@@ -131,7 +131,7 @@ function wireStaticUI() {
   if (g) $("#join-code").value = normaliseCode(g);
 
   // redraw (the wheel especially) when the theme changes
-  window.addEventListener("cinewheel:themechange", () => { try { render(); } catch (_) {} });
+  window.addEventListener("spinema:themechange", () => { try { render(); } catch (_) {} });
 
   // Web 1.0 window chrome: the title-bar [X] lives on the dialogs only, where it
   // is functional - it closes the name window and declines the reset window.
@@ -166,7 +166,7 @@ function wireStaticUI() {
     menu.innerHTML = `
       <button data-act="theme">Change theme</button>
       <button data-act="leave">Leave club</button>
-      <button data-act="about">About CineWheel</button>`;
+      <button data-act="about">About Spinema</button>`;
     document.body.appendChild(menu);
     startBtn.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("hidden"); });
     document.addEventListener("click", (e) => { if (e.target !== startBtn && !menu.contains(e.target)) menu.classList.add("hidden"); });
@@ -176,7 +176,7 @@ function wireStaticUI() {
       menu.classList.add("hidden");
       if (act === "theme") $("#theme-btn").click();
       else if (act === "leave") { if (state.code) leaveGroup(); }
-      else if (act === "about") alert("CineWheel - a film-club wheel. Spin for the week's film, watch it, then rate. Built as a static site on Firebase.");
+      else if (act === "about") alert("Spinema - a film-club wheel. Spin for the week's film, watch it, then rate. Built as a static site on Firebase.");
     });
   }
 }

@@ -1,6 +1,6 @@
-# CineWheel — project guide
+# Spinema — project guide
 
-CineWheel is a **film-club** web app: a group adds films to a wheel, takes turns
+Spinema is a **film-club** web app: a group adds films to a wheel, takes turns
 spinning to pick the week's film, sets a watch-by deadline, then everyone marks
 it watched and leaves a (sealed) half-star rating + review. Reviews unseal and
 the turn passes only once **every** member has watched **and** rated.
@@ -8,7 +8,7 @@ the turn passes only once **every** member has watched **and** rated.
 It's a **static site** — plain HTML/CSS/vanilla JS, **no build step** — backed by
 **Firebase** (Cloud Firestore + Anonymous Auth), deployed on GitHub Pages.
 
-- Live: https://lewisf94.github.io/CineWheel/
+- Live: https://lewisf94.github.io/spinema/
 - Technical / data-model reference: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Dev workflow & conventions: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - End-user Firebase setup: [README.md](./README.md)
@@ -38,7 +38,7 @@ console: Firestore created, the rules from `firestore.rules` published, and
 | `js/ratings.js` | Half-star widget, read-only stars, saving ratings |
 | `js/wheel.js` | Canvas wheel (theme-aware), spin animation, WebAudio sound, confetti |
 | `js/stats.js` | Client-side stats from movies + ratings + members |
-| `js/theme.js` | Theme switcher (localStorage; fires `cinewheel:themechange`) |
+| `js/theme.js` | Theme switcher (localStorage; fires `spinema:themechange`) |
 | `js/app.js` | Orchestration: routing, live Firestore subscriptions, rendering, actions |
 | `firestore.rules` | Security rules (auth required; group members read/write that group) |
 
@@ -51,7 +51,7 @@ console: Firestore created, the rules from `firestore.rules` published, and
 - **No emojis** in the UI (deliberate). The `*` star glyph in ratings is fine.
 - **Vanilla DOM.** Rendering is `innerHTML` templates + `addEventListener` in
   `app.js`. Escape user input with the local `esc()` helper before interpolating.
-- **Themes are per-user** (localStorage `cinewheel_theme`), never in Firestore.
+- **Themes are per-user** (localStorage `spinema_theme`), never in Firestore.
   Three only: `a24` (Default), `festival` (Cinema), `strokes` (Web 1.0). A theme
   is a CSS `[data-theme="…"]` block **plus** a matching branch in `wheelStyle()`
   in `wheel.js`.
@@ -69,5 +69,5 @@ reveal, stats, and a reset — across all three themes, desktop + mobile.
 ## Deploy
 
 GitHub Pages serves `main` at the root; pushing to `main` redeploys to
-https://lewisf94.github.io/CineWheel/ within ~a minute. `.nojekyll` stops Pages
+https://lewisf94.github.io/spinema/ within ~a minute. `.nojekyll` stops Pages
 from ignoring the `js/` folder.

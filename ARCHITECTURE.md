@@ -1,6 +1,6 @@
 # Architecture
 
-CineWheel is a static front end talking directly to Cloud Firestore — there is no
+Spinema is a static front end talking directly to Cloud Firestore — there is no
 server of our own. Firestore plus its security rules **are** the backend. Every
 browser signs in anonymously so the rules can require authentication.
 
@@ -83,7 +83,7 @@ wheel), chosen per-user via `localStorage` + the `data-theme` attribute:
 
 A theme = a CSS `[data-theme="…"]` block in `styles.css` **and** a branch in
 `wheelStyle()` in `wheel.js` (palette/ring/hub/pointer/labels). `theme.js` fires
-`cinewheel:themechange`; `app.js` listens and re-renders so the canvas wheel
+`spinema:themechange`; `app.js` listens and re-renders so the canvas wheel
 restyles live.
 
 ## Wheel rendering

@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// CineWheel security rules.
+// Spinema security rules.
 // --------------------------------------------------------------------------
 // Every browser is signed in anonymously (no visible login), so we require an
 // authenticated request for all access. This blocks the open internet while

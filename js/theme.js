@@ -2,7 +2,7 @@
 //  Theme switcher — three complete design systems, remembered in localStorage.
 //  Each look is defined entirely in CSS under [data-theme="…"] (plus a matching
 //  wheel style in wheel.js). This module toggles the attribute on <html>, builds
-//  the picker, and fires "cinewheel:themechange" so the app can redraw the wheel.
+//  the picker, and fires "spinema:themechange" so the app can redraw the wheel.
 // ============================================================================
 
 const THEMES = [
@@ -10,11 +10,11 @@ const THEMES = [
   { id: "festival", name: "Cinema",  bg: "#ece2cd", accent: "#c2482e" },
   { id: "strokes",  name: "Web 1.0", bg: "#0a1aa8", accent: "#cc1f1f" },
 ];
-const KEY = "cinewheel_theme";
+const KEY = "spinema_theme";
 const DEFAULT = "a24";
 
 function saved() {
-  try { return localStorage.getItem(KEY) || DEFAULT; } catch (_) { return DEFAULT; }
+  try { return localStorage.getItem(KEY) || localStorage.getItem("cinewheel_theme") || DEFAULT; } catch (_) { return DEFAULT; }
 }
 function remember(id) { try { localStorage.setItem(KEY, id); } catch (_) {} }
 
@@ -24,7 +24,7 @@ function apply(id) {
   const meta = document.querySelector('meta[name="theme-color"]');
   const t = THEMES.find((x) => x.id === id);
   if (meta && t) meta.setAttribute("content", t.bg);
-  window.dispatchEvent(new CustomEvent("cinewheel:themechange", { detail: id }));
+  window.dispatchEvent(new CustomEvent("spinema:themechange", { detail: id }));
 }
 
 function buildPicker() {
