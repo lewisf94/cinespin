@@ -14,6 +14,8 @@ import {
   runTransaction,
   arrayUnion,
   writeBatch,
+  useFunctions,
+  callFunction,
 } from "./firebase.js";
 import { getMemberId, getName, getUid } from "./session.js";
 
@@ -118,6 +120,10 @@ export async function renameGroup(code, newName) {
 // has approved. Anyone declining (or the proposer cancelling) clears it.
 
 export async function requestReset(code, memberId, name) {
+  if (useFunctions) {
+    await callFunction("requestReset", { code });
+    return;
+  }
   await updateDoc(doc(db, "groups", code), {
     resetRequest: {
       startedBy: memberId,
@@ -128,8 +134,13 @@ export async function requestReset(code, memberId, name) {
   });
 }
 
-// Add my approval (only if a request is still open).
+// Add my approval (only if a request is still open). In server-authoritative
+// mode the function also performs the wipe atomically once it's unanimous.
 export async function approveReset(code, memberId) {
+  if (useFunctions) {
+    await callFunction("approveReset", { code });
+    return;
+  }
   const ref = doc(db, "groups", code);
   await runTransaction(db, async (tx) => {
     const rr = (await tx.get(ref)).data()?.resetRequest;
@@ -141,6 +152,10 @@ export async function approveReset(code, memberId) {
 
 // Decline / cancel — clears the whole request.
 export async function cancelReset(code) {
+  if (useFunctions) {
+    await callFunction("cancelReset", { code });
+    return;
+  }
   await updateDoc(doc(db, "groups", code), { resetRequest: null });
 }
 
@@ -151,6 +166,9 @@ export async function cancelReset(code) {
 // membership get(), and a batched write may make at most 20 such document-
 // access calls. Small batches keep us comfortably under that ceiling.
 export async function performReset(code) {
+  // In server-authoritative mode the wipe already happened inside approveReset
+  // (server-side, when the last approval landed), so there's nothing to do here.
+  if (useFunctions) return;
   const [moviesSnap, ratingsSnap] = await Promise.all([
     getDocs(collection(db, "groups", code, "movies")),
     getDocs(collection(db, "groups", code, "ratings")),

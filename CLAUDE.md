@@ -41,10 +41,13 @@ console: Firestore created, the rules from `firestore.rules` published, and
 | `js/theme.js` | Theme switcher (localStorage; fires `spinema:themechange`) |
 | `js/app.js` | Orchestration: routing, live Firestore subscriptions, rendering, actions |
 | `firestore.rules` | Member-locked security rules (each club private to its `memberUids`) |
+| `functions/` | **Optional** Cloud Functions backend for server-authoritative invariants — off by default (`useFunctions` in `firebase.js`). See `functions/README.md`. |
 
 ## Conventions (please keep)
 
-- **No build step.** No bundler, no framework. Plain ES modules.
+- **No build step (front end).** No bundler, no framework — plain ES modules,
+  served as-is. (The *optional* `functions/` backend is a separate Node deploy;
+  it doesn't touch the static front end, which stays build-free.)
 - **One Firebase entry point.** Every module imports Firebase symbols from
   `./firebase.js` (which re-exports the SDK). Never import the gstatic SDK URLs
   elsewhere — add new SDK functions to the import **and** export list there.

@@ -481,7 +481,8 @@ function renderFilmCard() {
       });
       $("#force-finish").addEventListener("click", () => {
         if (confirm("Reveal everyone's reviews now and pass the turn to the next person?")) {
-          finalizeRound(state.code, cf.movieId);
+          // force = true: spinner's early wrap-up (server allows it before everyone's done).
+          finalizeRound(state.code, cf.movieId, true);
         }
       });
     }

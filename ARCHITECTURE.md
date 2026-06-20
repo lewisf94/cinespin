@@ -122,14 +122,36 @@ segment. Sound is WebAudio; the win burst is canvas-confetti.
 - **Own rating only.** A member may create/update only the rating carrying
   their own `uid`. No client deletes of the group doc.
 
-**Still client-trusted** (see `ROADMAP.md` #7/#8): the turn-rotation, finalize
-and unanimous-reset *invariants* are enforced in the client, and a member could
-over-delete their own club's movies/ratings. That's fine for a friendly club,
-not a hostile-actor guarantee — moving those to a Cloud Function is the planned
-hardening.
+**Client-trusted by default** (the zero-backend mode): the turn-rotation,
+finalize and unanimous-reset *invariants* are enforced in the client, and a
+member could over-delete their own club's movies/ratings. That's fine for a
+friendly club, not a hostile-actor guarantee.
 
 **Rollout:** the uid-recording client (this code) must ship **before** the new
 rules are published, so existing members record a uid (`memberUids`) on their
 next visit; otherwise they'd be locked out until they re-join. The rules are in
 `firestore.rules` but do **not** auto-deploy — test them in the Firebase
 Emulator, then paste into the console (Firestore → Rules → Publish).
+
+## Server-authoritative mode (optional)
+
+For hard guarantees instead of client trust, deploy the **Cloud Functions** in
+`functions/` and set `useFunctions = true` in `js/firebase.js`. Then every write
+that touches shared club state — spin, set deadline, mark watched, finalize,
+and request/approve/cancel reset — routes through callable functions that run
+with the Admin SDK and enforce the invariants server-side:
+
+- the turn passes only when **every** member has watched **and** rated (the
+  spinner may force an early wrap-up);
+- a reset wipes only on **unanimous** approval, performed atomically inside
+  `approveReset` when the last approval lands (so no client race — this
+  supersedes the client single-writer);
+- you can mark only **yourself** watched; only the current spinner can spin,
+  only when no film is in play, and only onto a real wheel film.
+
+This is **off by default** (the Functions SDK isn't even fetched), so the static
+zero-backend deploy is unaffected until you opt in. It needs the Blaze plan and
+a deploy step (the static front end itself stays no-build). When on, publish the
+**hardened** rules in `functions/firestore.rules`, which forbid clients from
+writing those fields directly — the functions become the only path. Full
+walkthrough: `functions/README.md`.

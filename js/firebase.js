@@ -81,6 +81,28 @@ function enableAppCheck(firebaseApp) {
     .catch((e) => console.error("App Check failed to initialise:", e));
 }
 
+// ---- optional server-authoritative mode (Cloud Functions) ------------------
+// OFF by default. When you deploy the functions in functions/ and set this to
+// true, the privileged round/turn/reset writes route through callable functions
+// instead of being written by the client. The Functions SDK is lazy-loaded, so
+// the default build never fetches it. See functions/README.md.
+export const useFunctions = false;
+const FUNCTIONS_REGION = "us-central1";
+
+let _fnMod = null;
+let _functions = null;
+
+// Call a callable Cloud Function by name; returns its data payload (or throws
+// the function's HttpsError, whose .message is safe to show the user).
+export async function callFunction(name, data) {
+  if (!_fnMod) {
+    _fnMod = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js");
+  }
+  if (!_functions) _functions = _fnMod.getFunctions(app, FUNCTIONS_REGION);
+  const res = await _fnMod.httpsCallable(_functions, name)(data);
+  return res.data;
+}
+
 // Re-export everything the rest of the app needs, so other modules import from
 // one place and we never mismatch SDK versions.
 export {

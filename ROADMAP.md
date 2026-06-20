@@ -39,8 +39,13 @@ your Firebase project from here. I write the code; you deploy.
   immediately; other clients wait `FALLBACK_MS` and only step in if the owner didn't. Kills the
   N-client transaction race (contention → `ABORTED`) with no softlock. (`js/app.js`.) A Cloud
   Function (#8) would make it authoritative.
-- [ ] **8. Move privileged invariants server-side (Cloud Function)** — "turn passes only when everyone
-  rated", "reset needs unanimity". **[Blaze plan + functions deploy; breaks 'no build step']** — opt-in.
+- [x] **8. Move privileged invariants server-side (Cloud Functions)** — *built; deploy pending* —
+  callable functions in `functions/` own every shared-state write (spin, set deadline, mark watched,
+  finalize, request/approve/cancel reset). Turn passes only when everyone watched+rated; reset wipes
+  only on unanimous approval (atomically, inside `approveReset`); you can only mark yourself watched;
+  only the spinner spins. **OFF by default** (`useFunctions=false` in `js/firebase.js`; Functions SDK
+  lazy-loaded) so the live app is unchanged until you opt in. **[Blaze + `firebase deploy --only
+  functions`, flip the flag, publish `functions/firestore.rules`]** — guide in `functions/README.md`.
 - [ ] **9. Portable identity** — optional email-link sign-in linked onto the anonymous account
   (same uid; data survives a cache wipe / new device). `js/session.js` + small UI.
 - [x] **10. serverTimestamp ordering guard** — the wheel/history sorts already fall back to
@@ -55,8 +60,9 @@ your Firebase project from here. I write the code; you deploy.
 
 ## P3 — Architecture
 
-- [ ] **13. Decision:** stay on Firebase, add a thin **Cloud Functions** layer for privileged ops
-  (recommended) — vs status quo. (Ties to #7/#8.)
+- [x] **13. Decision:** stay on Firebase + a thin, **optional** Cloud Functions layer for privileged
+  ops (built in #8). Off by default to preserve the zero-backend static deploy; opt in for hard
+  guarantees. The static front end stays no-build either way.
 
 ## P4 — Features
 

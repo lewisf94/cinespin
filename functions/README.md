@@ -1,0 +1,59 @@
+# Spinema Cloud Functions (optional, server-authoritative mode)
+
+By default Spinema runs **without** these — the static site talks straight to
+Firestore and the round/turn/reset invariants are trusted to the client (fine
+for a friendly club). Deploying these makes those invariants **server-enforced**
+instead: the turn passes only when everyone has watched and rated, a reset
+happens only on unanimous approval, you can only mark *yourself* watched, and
+only the current spinner can spin. The static front end stays no-build; this is
+a separate, optional backend.
+
+**Requires the Blaze (pay-as-you-go) plan.** Cloud Functions aren't available on
+the free Spark plan. Blaze still has a generous free monthly allowance; a small
+club will almost certainly stay within it.
+
+## What's here
+
+| File | What it is |
+|------|-----------|
+| `index.js` | The callable functions (`commitSpin`, `setDeadline`, `markWatched`, `finalizeRound`, `requestReset`, `approveReset`, `cancelReset`) |
+| `package.json` | Node 20, `firebase-admin` + `firebase-functions` |
+| `firestore.rules` | **Hardened** rules to publish *after* this is live (clients can no longer write the shared state directly) |
+
+## Turn it on
+
+1. **Upgrade to Blaze**: Firebase console → your project → upgrade plan.
+2. **Install the CLI** (once): `npm install -g firebase-tools`, then
+   `firebase login`.
+3. **Point the CLI at your project** from the repo root:
+   `firebase use cinewheel-79636` (or `firebase use --add`).
+4. **Test locally first** (strongly recommended):
+   ```bash
+   cd functions && npm install && cd ..
+   firebase emulators:start --only functions,firestore,auth
+   ```
+   Run the app against the emulator and click through: spin, mark watched, rate,
+   finish a round, and a unanimous reset.
+5. **Deploy the functions**:
+   ```bash
+   firebase deploy --only functions
+   ```
+   They deploy to the default region **us-central1** — which is what the client
+   expects (`FUNCTIONS_REGION` in `js/firebase.js`). If you change the region,
+   change it in both places.
+6. **Flip the client flag**: in `js/firebase.js` set `useFunctions = true`, then
+   commit + push so GitHub Pages redeploys. (Now the app routes spins, watches,
+   finishes and resets through the functions.)
+7. **Publish the hardened rules**: copy `functions/firestore.rules` into the
+   Firebase console (Firestore → Rules → Publish). These stop clients writing the
+   shared state directly, so the functions become the only path.
+
+> Order matters: deploy functions (5) → flip the flag + redeploy site (6) →
+> publish hardened rules (7). If you publish the hardened rules before the
+> functions/flag are live, spinning/finishing/resetting will fail until you do.
+
+## Turn it off
+
+Set `useFunctions = false` in `js/firebase.js` (redeploy the site) and re-publish
+the root `firestore.rules`. You can leave the deployed functions in place or
+`firebase functions:delete` them.
