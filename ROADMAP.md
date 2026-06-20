@@ -26,8 +26,10 @@ your Firebase project from here. I write the code; you deploy.
   (so existing members aren't locked out). For this test app: re-join once after deploy.
 - [ ] **4. [console]** Turn on **anonymous-account auto-cleanup** (deletes anon accounts >30 days; stops
   them counting toward quota/billing).
-- [ ] **5. Add Firebase App Check (reCAPTCHA v3)** as anti-abuse defense-in-depth (monitor → enforce).
-  **[console + site key]**
+- [x] **5. Add Firebase App Check (reCAPTCHA v3)** — *scaffolded; activation pending console*
+  - off by default (blank `recaptchaV3SiteKey` in `js/firebase.js`), SDK lazy-loaded only when set,
+    so zero cost until enabled; README step 7 has the setup
+  - **[console + site key]** register the site, paste the key, run in **monitor** then **enforce**
 - [ ] 6. (optional) Restrict the Web API key by HTTP referrer in Google Cloud (soft layer, not a boundary).
 
 ## P1 — Correctness & reliability

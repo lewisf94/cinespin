@@ -69,6 +69,13 @@ shared data. You only do this once.
 2. Delete what's there and paste the entire contents of
    [`firestore.rules`](./firestore.rules), then click **Publish**.
 
+These rules make each club **private to its members** (the Firebase uids that
+have joined) — nobody can read, edit, or enumerate a club they haven't joined.
+*Upgrading an existing deployment?* Ship the current app code **first** (so
+everyone records a uid by re-joining once), then publish the rules — otherwise
+members without a recorded uid are locked out until they re-join. See the header
+of [`firestore.rules`](./firestore.rules) and `ARCHITECTURE.md`.
+
 ### 5. Turn on Anonymous sign-in
 1. Left menu: **Build → Authentication → Get started**.
 2. Open the **Sign-in method** tab → **Add new provider** → **Anonymous** →
@@ -81,6 +88,18 @@ shared data. You only do this once.
 2. Replace the placeholder `firebaseConfig` (the block with `REPLACE_ME`) with
    the one you copied in step 2.
 3. Save.
+
+### 7. (Optional) Harden with App Check
+Defense-in-depth so only your real site — not a script with your public API
+key — can call Firebase. Skippable; the security rules are the real boundary.
+1. Google reCAPTCHA admin → create a **reCAPTCHA v3** site for your domain
+   (add `localhost` too if testing locally) → copy the **site key**.
+2. Firebase console: **Build → App Check → Apps →** register your web app with
+   the reCAPTCHA v3 provider.
+3. Paste the site key into `recaptchaV3SiteKey` in
+   [`js/firebase.js`](./js/firebase.js).
+4. In App Check, keep Firestore in **Monitor** mode at first; once the metrics
+   show your real traffic is verified, switch it to **Enforce**.
 
 ---
 
