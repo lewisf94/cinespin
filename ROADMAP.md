@@ -32,8 +32,10 @@ your Firebase project from here. I write the code; you deploy.
 
 ## P1 — Correctness & reliability
 
-- [ ] **7. Single-writer finalize/reset** — stop EVERY client racing the same transaction
-  (contention → `ABORTED`). Either a Cloud Function, or only the current spinner's client triggers it.
+- [x] **7. Single-writer finalize/reset** — the round owner (spinner / reset proposer) commits
+  immediately; other clients wait `FALLBACK_MS` and only step in if the owner didn't. Kills the
+  N-client transaction race (contention → `ABORTED`) with no softlock. (`js/app.js`.) A Cloud
+  Function (#8) would make it authoritative.
 - [ ] **8. Move privileged invariants server-side (Cloud Function)** — "turn passes only when everyone
   rated", "reset needs unanimity". **[Blaze plan + functions deploy; breaks 'no build step']** — opt-in.
 - [ ] **9. Portable identity** — optional email-link sign-in linked onto the anonymous account

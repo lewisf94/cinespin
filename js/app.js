@@ -58,6 +58,10 @@ const state = {
 let namePromiseResolve = null;
 let finalizingId = null; // guards against firing finalizeRound repeatedly
 let resetting = false; // guards against firing performReset repeatedly
+// Single-writer fallback: the round's natural owner (spinner / reset proposer)
+// commits immediately; every other client waits this long and only steps in if
+// the owner didn't, so we don't have every browser racing the same transaction.
+const FALLBACK_MS = 4000;
 
 // ---- boot ------------------------------------------------------------------
 async function init() {
@@ -359,18 +363,31 @@ function render() {
   $("#group-code").textContent = state.code;
   $("#who-am-i").textContent = getName() || "Me";
 
-  // Auto-finish the round once everyone has watched AND rated.
+  // Auto-finish the round once everyone has watched AND rated. Only one client
+  // should commit it: the spinner does so at once; others wait FALLBACK_MS and
+  // re-check, so they step in only if the spinner is away (no softlock, no race).
   const cf = state.group?.currentFilm;
   if (cf) {
     if (roundState(cf).complete && finalizingId !== cf.movieId) {
       finalizingId = cf.movieId;
-      finalizeRound(state.code, cf.movieId).catch(() => { finalizingId = null; });
+      const fire = () => finalizeRound(state.code, cf.movieId)
+        .catch(() => { if (finalizingId === cf.movieId) finalizingId = null; });
+      if (currentSpinnerId(state.group) === getMemberId()) {
+        fire();
+      } else {
+        setTimeout(() => {
+          const live = state.group?.currentFilm;
+          if (live && live.movieId === cf.movieId && roundState(live).complete) fire();
+          else if (finalizingId === cf.movieId) finalizingId = null;
+        }, FALLBACK_MS);
+      }
     }
   } else {
     finalizingId = null;
   }
 
   // Group reset: show the consent banner, and wipe once everyone has approved.
+  // Same single-writer pattern — the proposer commits; others are the fallback.
   renderResetBanner();
   const rr = state.group?.resetRequest;
   if (rr) {
@@ -378,7 +395,16 @@ function render() {
     const all = ids.length > 0 && ids.every((id) => (rr.approvals || []).includes(id));
     if (all && !resetting) {
       resetting = true;
-      performReset(state.code).catch(() => { resetting = false; });
+      const fire = () => performReset(state.code).catch(() => { resetting = false; });
+      if (rr.startedBy === getMemberId()) {
+        fire();
+      } else {
+        setTimeout(() => {
+          const live = state.group?.resetRequest;
+          if (live && ids.every((id) => (live.approvals || []).includes(id))) fire();
+          else resetting = false;
+        }, FALLBACK_MS);
+      }
     }
   } else {
     resetting = false;

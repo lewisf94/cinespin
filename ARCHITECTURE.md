@@ -47,23 +47,31 @@ can lock each club to its own members.
 2. Each member clicks "I've watched it" (`markWatchedAck` → `arrayUnion` on the
    movie's `watchedBy`) and submits a rating (`saveRating`). Everyone else's
    ratings stay **sealed** in the UI until the round completes.
-3. When **every current member is in `watchedBy` AND has a rating**, a client
-   calls `finalizeRound` (an idempotent transaction): the film flips to
+3. When **every current member is in `watchedBy` AND has a rating**,
+   `finalizeRound` runs (an idempotent transaction): the film flips to
    `watched`, `currentFilm` clears, `currentSpinnerIndex` advances. That reveals
    all reviews (the film is now history) and unlocks the next spin.
-   - The current spinner can `finalizeRound` early ("wrap up now") if someone is
-     away, so the group never softlocks.
+   - **Single writer:** to avoid every browser racing the same transaction, only
+     the **current spinner's** client auto-commits immediately; other clients
+     wait `FALLBACK_MS` and step in only if the spinner didn't (e.g. they're
+     away). So there's no contention in the common case and no softlock if the
+     spinner is gone.
+   - The current spinner can also `finalizeRound` early ("wrap up now") if
+     someone is away.
 
-The gating logic lives in `app.js` (`roundState`, plus the auto-finalize in
-`render`).
+The gating logic lives in `app.js` (`roundState`, plus the single-writer
+auto-finalize in `render`).
 
 ## Group reset (unanimous)
 
 `requestReset` writes `resetRequest` with the proposer pre-approved; `approveReset`
 appends approvals; any `cancelReset` (decline/cancel) clears it. Once every member
-has approved, `performReset` batch-deletes all `movies` + `ratings` and clears the
-group's play state (keeping members and the code). Enforced client-side — fine for
-a friendly club, not a hostile-actor guarantee.
+has approved, `performReset` deletes all `movies` + `ratings` (in chunks of ≤15 so
+each batch stays under the security rules' 20-`get()`-per-batch ceiling) and clears
+the group's play state (keeping members and the code). The same **single-writer**
+pattern as finalize applies — the proposer commits the wipe, others are the
+fallback. Enforced client-side — fine for a friendly club, not a hostile-actor
+guarantee.
 
 ## Live data & rendering
 
