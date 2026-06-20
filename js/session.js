@@ -26,6 +26,12 @@ try {
   });
 } catch (_) {}
 
+// The Firebase anonymous auth uid — the identity the security rules trust.
+// Available once ensureAuth() has resolved (init() awaits it before any writes).
+export function getUid() {
+  return auth && auth.currentUser ? auth.currentUser.uid : null;
+}
+
 export function getMemberId() {
   let id = localStorage.getItem(MEMBER_ID_KEY);
   if (!id) {

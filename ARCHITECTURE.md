@@ -11,6 +11,7 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
   name: string
   createdAt, createdByName
   memberOrder: [memberId, ...]        # turn order = join order
+  memberUids: [authUid, ...]          # Firebase anon-auth uids = membership (security rules)
   currentSpinnerIndex: number         # whose turn to spin (index into memberOrder)
   currentFilm: {                      # the film in play this week, or null
     movieId, title, addedByName, spinnerName, pickedAt, deadline
@@ -21,7 +22,7 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
   } | null
 
   members/{memberId}                  # memberId = random id kept in the browser
-    name, joinedAt
+    name, uid, joinedAt               # uid = Firebase auth uid (for the rules)
 
   movies/{movieId}
     title, addedByName, addedByMemberId, addedAt
@@ -30,12 +31,13 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
     watchedBy: [memberId, ...]        # who confirmed they watched the current film
 
   ratings/{movieId__memberId}         # one per member per film
-    movieId, memberId, name, score (0.5-5), review, updatedAt
+    movieId, memberId, uid, name, score (0.5-5), review, updatedAt
 ```
 
 No login/accounts: identity is a random `memberId` + display name in
-`localStorage` (`session.js`). Anonymous auth exists only so the rules can block
-the open internet.
+`localStorage` (`session.js`). The anonymous-auth `uid` is also recorded on join
+(`memberUids` on the group; `uid` on member/rating docs) so the security rules
+can lock each club to its own members.
 
 ## The weekly round
 

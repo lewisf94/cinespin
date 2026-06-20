@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { db, doc, setDoc, serverTimestamp } from "./firebase.js";
-import { getMemberId, getName } from "./session.js";
+import { getMemberId, getName, getUid } from "./session.js";
 
 // Interactive 0.5–5 star control. Each star has a left half (x.5) and a right
 // half (x.0). Returns an element with getValue()/setValue() helpers.
@@ -77,6 +77,7 @@ export async function saveRating(code, movieId, score, review) {
     {
       movieId,
       memberId,
+      uid: getUid(),
       name: getName(),
       score: score || 0,
       review: (review || "").trim(),

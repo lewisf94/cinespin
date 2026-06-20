@@ -15,7 +15,7 @@ import {
   arrayUnion,
   writeBatch,
 } from "./firebase.js";
-import { getMemberId, getName } from "./session.js";
+import { getMemberId, getName, getUid } from "./session.js";
 
 // Unambiguous alphabet — no 0/O, 1/I to avoid confusion when sharing codes.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -36,6 +36,7 @@ export function normaliseCode(code) {
 export async function createGroup(groupName) {
   const memberId = getMemberId();
   const name = getName();
+  const uid = getUid();
 
   let code = null;
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -53,12 +54,14 @@ export async function createGroup(groupName) {
     createdAt: serverTimestamp(),
     createdByName: name,
     memberOrder: [memberId],
+    memberUids: uid ? [uid] : [],
     currentSpinnerIndex: 0,
     currentFilm: null,
     lastSpin: null,
   });
   await setDoc(doc(db, "groups", code, "members", memberId), {
     name,
+    uid,
     joinedAt: serverTimestamp(),
   });
   return code;
@@ -69,6 +72,7 @@ export async function joinGroup(rawCode) {
   const code = normaliseCode(rawCode);
   const memberId = getMemberId();
   const name = getName();
+  const uid = getUid();
   const groupRef = doc(db, "groups", code);
 
   const snap = await getDoc(groupRef);
@@ -77,17 +81,20 @@ export async function joinGroup(rawCode) {
   // Upsert our member record (keeps name fresh on every join).
   await setDoc(
     doc(db, "groups", code, "members", memberId),
-    { name, joinedAt: serverTimestamp() },
+    { name, uid, joinedAt: serverTimestamp() },
     { merge: true }
   );
 
-  // Append to the rotation only if we're new to this group.
+  // Append to the rotation + record our auth uid (the membership the security
+  // rules check) only if we're new to this group.
   await runTransaction(db, async (tx) => {
-    const g = await tx.get(groupRef);
-    const order = g.data().memberOrder || [];
-    if (!order.includes(memberId)) {
-      tx.update(groupRef, { memberOrder: [...order, memberId] });
-    }
+    const data = (await tx.get(groupRef)).data() || {};
+    const order = data.memberOrder || [];
+    const uids = data.memberUids || [];
+    const updates = {};
+    if (!order.includes(memberId)) updates.memberOrder = [...order, memberId];
+    if (uid && !uids.includes(uid)) updates.memberUids = [...uids, uid];
+    if (Object.keys(updates).length) tx.update(groupRef, updates);
   });
   return code;
 }
