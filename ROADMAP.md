@@ -62,7 +62,10 @@ your Firebase project from here. I write the code; you deploy.
   (live-listen only the current round's ratings + load the archive on demand, or a denormalized
   group-state doc) is **documented but deferred** — it reshapes the data flow and wants emulator
   testing before touching the live app; small clubs are fine as-is. (`js/app.js`, ARCHITECTURE.)
-- [ ] **12. `count()` aggregation for stats** instead of reading every doc.
+- [n/a] **12. `count()` aggregation for stats** — not worth it for this design: the stats need the
+  actual ratings/movies (scores, reviews, genres), which the live listeners already load, so an extra
+  server-side `count()` query would add reads, not save them. Revisit only alongside #11's archive
+  split (where the full history is no longer in memory).
 
 ## P3 — Architecture
 
