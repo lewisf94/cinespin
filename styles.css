@@ -212,6 +212,7 @@ textarea { resize: vertical; min-height: 70px; }
 .lb-score { color: var(--muted); margin-left: auto; }
 .people-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 .people-table th, .people-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.meta-line { margin: 8px 0; line-height: 1.5; }
 .people-table th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 @media (max-width: 560px) { .stats-tiles { grid-template-columns: repeat(2, 1fr); } }
 

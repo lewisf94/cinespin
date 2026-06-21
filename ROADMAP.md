@@ -79,7 +79,9 @@ your Firebase project from here. I write the code; you deploy.
 - [ ] **17. Ranked-choice "vote" mode** as an alternative to spinning.
 - [ ] **18. PWA** (manifest + service worker, offline shell).
 - [ ] **19. Web push reminders** (deadline / your turn / reviews unsealed; iOS needs home-screen install).
-- [ ] **20. Richer stats** from TMDB metadata (genre, hours, decade).
+- [x] **20. Richer stats** from TMDB metadata — a "Watch habits" card (total hours + average length,
+  top genres, films by decade) that appears on the Stats tab only once watched films carry TMDB
+  metadata (#14). Degrades to nothing when absent. (`js/stats.js`.)
 - [ ] 21. Nice-to-have: live lobby/presence, per-film discussion threads, season recap.
 
 ---

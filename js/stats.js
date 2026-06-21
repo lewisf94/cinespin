@@ -23,6 +23,19 @@ export function renderStats(container, movies, ratings, members) {
   const onWheel = movies.filter((m) => m.status === "wheel");
   const addedByOf = Object.fromEntries(movies.map((m) => [m.id, m.addedByMemberId]));
 
+  // Optional TMDB-metadata aggregates (only meaningful once films carry them).
+  const withRuntime = watched.filter((m) => typeof m.runtime === "number" && m.runtime > 0);
+  const totalMins = withRuntime.reduce((s, m) => s + m.runtime, 0);
+  const genreCounts = {};
+  watched.forEach((m) => (m.genres || []).forEach((g) => (genreCounts[g] = (genreCounts[g] || 0) + 1)));
+  const topGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const decadeCounts = {};
+  watched.forEach((m) => {
+    const y = parseInt(m.year, 10);
+    if (!isNaN(y)) { const d = Math.floor(y / 10) * 10; decadeCounts[d] = (decadeCounts[d] || 0) + 1; }
+  });
+  const decades = Object.entries(decadeCounts).sort((a, b) => a[0] - b[0]);
+
   // group scores by member (given) and by film (received)
   const givenBy = {};
   const scoresFor = {};
@@ -101,11 +114,37 @@ export function renderStats(container, movies, ratings, members) {
     html += `</tbody></table><p class="muted small">"Avg received" = average score on films that person added.</p></div>`;
   }
 
+  if (totalMins > 0 || topGenres.length || decades.length) {
+    html += `<div class="card"><h3>Watch habits</h3>`;
+    if (totalMins > 0) {
+      html += `<p class="meta-line"><b>${hoursMins(totalMins)}</b> of films watched`;
+      if (withRuntime.length) html += ` &middot; averaging <b>${Math.round(totalMins / withRuntime.length)} min</b>`;
+      html += `</p>`;
+    }
+    if (topGenres.length) {
+      html += `<p class="meta-line"><span class="muted small">Top genres</span><br>${topGenres
+        .map(([g, n]) => `${esc(g)} <span class="muted">(${n})</span>`)
+        .join("  &middot;  ")}</p>`;
+    }
+    if (decades.length) {
+      html += `<p class="meta-line"><span class="muted small">By decade</span><br>${decades
+        .map(([d, n]) => `${d}s <span class="muted">(${n})</span>`)
+        .join("  &middot;  ")}</p>`;
+    }
+    html += `</div>`;
+  }
+
   if (!watched.length && !ratings.length) {
     html += `<p class="muted center">No data yet. Spin the wheel, watch a film, and rate it to see the numbers appear here.</p>`;
   }
 
   container.innerHTML = html;
+}
+
+function hoursMins(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
 }
 
 function superlative(label, who, detail) {
