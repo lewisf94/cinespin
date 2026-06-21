@@ -138,6 +138,14 @@ test the spin together.
 
 ---
 
+## Install it (PWA)
+
+Spinema ships a web manifest + service worker, so phones and desktops can
+**install it to the home screen** (browser menu → *Install* / *Add to Home
+Screen*) and it launches full-screen with an app icon. The shell is cached for
+instant loads; live data still needs a connection (it's a realtime app). To
+force clients onto fresh assets after a big change, bump `CACHE` in `sw.js`.
+
 ## Tech notes
 
 - Plain HTML/CSS/JavaScript — **no build step**.

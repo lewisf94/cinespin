@@ -79,7 +79,10 @@ your Firebase project from here. I write the code; you deploy.
   Escape-to-close on modals, an `aria-live` region announcing the pick / whose turn, a labelled wheel
   canvas, and a `prefers-reduced-motion` guard. (Deeper per-theme contrast tuning can still follow.)
 - [ ] **17. Ranked-choice "vote" mode** as an alternative to spinning.
-- [ ] **18. PWA** (manifest + service worker, offline shell).
+- [x] **18. PWA** — `manifest.webmanifest` + generated maskable icons + a service worker (`sw.js`):
+  installable to a home screen, instant cached shell, offline fallback. The SW only touches
+  same-origin GETs (network-first HTML, stale-while-revalidate assets), so Firebase/TMDB are never
+  intercepted. Bump `CACHE` in `sw.js` to force-refresh assets.
 - [ ] **19. Web push reminders** (deadline / your turn / reviews unsealed; iOS needs home-screen install).
 - [x] **20. Richer stats** from TMDB metadata — a "Watch habits" card (total hours + average length,
   top genres, films by decade) that appears on the Stats tab only once watched films carry TMDB
