@@ -60,6 +60,7 @@ const state = {
 let namePromiseResolve = null;
 let finalizingId = null; // guards against firing finalizeRound repeatedly
 let resetting = false; // guards against firing performReset repeatedly
+let renderTimer = null; // coalesces bursts of listener-driven renders
 // Single-writer fallback: the round's natural owner (spinner / reset proposer)
 // commits immediately; every other client waits this long and only steps in if
 // the owner didn't, so we don't have every browser racing the same transaction.
@@ -380,34 +381,41 @@ async function handleJoin(raw) {
 
 // ---- live data -------------------------------------------------------------
 function subscribe(code) {
+  // The four listeners often fire together (initial load delivers all four; a
+  // single action like a spin touches the group doc AND a movie). Coalesce the
+  // resulting renders into one per turn of the event loop so we rebuild the DOM
+  // once instead of up to four times. setTimeout(0) (not requestAnimationFrame)
+  // so the auto-finalize/reset triggers in render() still fire in background
+  // tabs, where rAF is paused.
   state.unsub.push(
     onSnapshot(doc(db, "groups", code), (snap) => {
       state.group = snap.exists() ? snap.data() : null;
-      render();
+      scheduleRender();
     })
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "members"), (snap) => {
       state.members = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      render();
+      scheduleRender();
     })
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "movies"), (snap) => {
       state.movies = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      render();
+      scheduleRender();
     })
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "ratings"), (snap) => {
       state.ratings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      render();
+      scheduleRender();
     })
   );
 }
 function teardownSubs() {
   state.unsub.forEach((u) => { try { u(); } catch (_) {} });
   state.unsub = [];
+  if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
 }
 
 // ---- ordering helpers ------------------------------------------------------
@@ -459,6 +467,12 @@ function switchTab(tab) {
 function editingWithin(el) {
   const a = document.activeElement;
   return a && el.contains(a) && /INPUT|TEXTAREA/.test(a.tagName);
+}
+
+// Coalesce a burst of render requests into a single render next tick.
+function scheduleRender() {
+  if (renderTimer) return;
+  renderTimer = setTimeout(() => { renderTimer = null; render(); }, 0);
 }
 
 function render() {

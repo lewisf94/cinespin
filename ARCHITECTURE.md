@@ -88,7 +88,17 @@ guarantee.
 `app.js` opens four `onSnapshot` listeners (group doc, members, movies, ratings)
 and re-renders on any change. Rendering is plain `innerHTML` templates + event
 listeners; the film card, wheel/films/ratings tabs are rendered in `app.js`,
-stats in `stats.js`.
+stats in `stats.js`. Renders are **coalesced** (`scheduleRender`, a `setTimeout(0)`
+debounce) so a burst of listener events — the four firing together on load, or a
+spin touching the group doc *and* a movie — rebuilds the DOM once, not four times.
+
+**Scaling the reads (future).** The movies and especially the `ratings`
+listeners load the whole history, so reads grow with the club's age. For a
+large/old club the next step is to keep only the *current round's* ratings on a
+live listener and load the archive on demand when the History/Stats tabs open
+(or denormalise a small "group state" doc). Deferred for now — it's a real
+change to the data flow and wants emulator testing before it touches the live
+app; small clubs are fine as-is.
 
 ## Themes
 

@@ -57,8 +57,11 @@ your Firebase project from here. I write the code; you deploy.
 
 ## P2 — Performance & cost
 
-- [ ] **11. Fewer / narrower listeners** — consolidate the 4 `onSnapshot` listeners; consider a
-  denormalized "group state" doc; `limit()` history.
+- [~] **11. Fewer / narrower listeners** — *renders coalesced* (`scheduleRender`, `setTimeout(0)`) so a
+  burst of the four listeners rebuilds the DOM once, not four times. The deeper read-cost win
+  (live-listen only the current round's ratings + load the archive on demand, or a denormalized
+  group-state doc) is **documented but deferred** — it reshapes the data flow and wants emulator
+  testing before touching the live app; small clubs are fine as-is. (`js/app.js`, ARCHITECTURE.)
 - [ ] **12. `count()` aggregation for stats** instead of reading every doc.
 
 ## P3 — Architecture
