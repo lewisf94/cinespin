@@ -29,6 +29,7 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
     status: "wheel" | "current" | "watched"
     pickedAt, watchedAt, deadline
     watchedBy: [memberId, ...]        # who confirmed they watched the current film
+    tmdbId?, year?, posterPath?, runtime?, genres?[]   # optional TMDB metadata
 
   ratings/{movieId__memberId}         # one per member per film
     movieId, memberId, uid, name, score (0.5-5), review, updatedAt

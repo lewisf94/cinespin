@@ -146,6 +146,25 @@ textarea { resize: vertical; min-height: 70px; }
 .movie-row:last-child { border-bottom: none; }
 .movie-title { font-weight: 600; }
 .movie-by { margin-left: auto; }
+.movie-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.movie-main .movie-by { margin-left: 0; }
+
+/* ---- TMDB metadata (posters + autocomplete) ---- */
+.poster-thumb { width: 44px; height: 66px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); background: var(--line); flex-shrink: 0; }
+.poster-thumb.tiny { width: 32px; height: 48px; }
+.poster-thumb.empty { display: inline-block; }
+.tmdb-results { margin-top: 8px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+.tmdb-item { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 8px 10px; background: none; border: none; border-bottom: 1px solid var(--line); cursor: pointer; color: var(--text); font: inherit; }
+.tmdb-item:last-child { border-bottom: none; }
+.tmdb-item:hover, .tmdb-item:focus-visible { background: var(--line); outline: none; }
+.tmdb-item-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.tmdb-item-title { font-weight: 600; }
+.tmdb-attribution { margin: 10px 0 0; }
+.film-poster { display: block; width: 120px; height: auto; border-radius: 6px; border: 1px solid var(--line); margin: 0 auto 14px; }
+.film-tmdb { margin: 4px 0 0; }
+.watched-card .poster-thumb { float: left; width: 52px; height: 78px; margin: 2px 14px 6px 0; }
+.watched-card::after { content: ""; display: block; clear: both; }
+[data-theme="a24"] .film-poster { margin: 0 0 16px; }
 
 /* ---- ratings / history ---- */
 .pending-card { border-color: var(--line-strong); }

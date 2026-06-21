@@ -149,7 +149,16 @@ test the spin together.
   lands on it. The spinner broadcasts the spin so everyone animates the same
   result.
 
-### Want film posters? (optional, later)
-The data model already has `posterUrl`/`year` fields. You could wire up the free
-[TMDB API](https://www.themoviedb.org/settings/api) to auto-fill them when a
-movie is added.
+### Film posters & metadata (optional, via TMDB)
+Built in, **off by default**. Add a free [TMDB](https://www.themoviedb.org) API
+key and the "Add a film" box gains title autocomplete with posters, and picking
+a result stores the year, runtime and genres (shown on the cards):
+1. Create a free TMDB account → **Settings → API** → copy the **API Key (v3
+   auth)**.
+2. Paste it into `TMDB_API_KEY` at the top of [`js/tmdb.js`](./js/tmdb.js), then
+   commit + push.
+
+With no key, the box stays a plain title input — nothing here runs and no TMDB
+requests are made. The key ships in the client (like the Firebase key), which is
+fine for TMDB's non-commercial use. The app shows TMDB's required attribution
+wherever the data appears.

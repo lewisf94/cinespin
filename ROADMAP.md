@@ -69,8 +69,10 @@ your Firebase project from here. I write the code; you deploy.
 
 ## P4 — Features
 
-- [ ] **14. TMDB** — title autocomplete + posters / year / runtime / genres when adding films
-  (requires TMDB logo + attribution).
+- [x] **14. TMDB** — *built; needs a free key* — title autocomplete + posters in the add-film box;
+  picking a result stores year/runtime/genres (shown on the film card, wheel list and history).
+  Off by default (blank `TMDB_API_KEY` in `js/tmdb.js`, no requests until set); required attribution
+  shown in-app. **[get a free TMDB v3 key]** (README). Genre/runtime now feed richer stats (#20).
 - [ ] **15. "Where to watch"** (TMDB watch providers; per-item JustWatch attribution required).
 - [ ] **16. Accessibility pass** across the 3 themes (contrast, focus rings, keyboard-operable star
   widget + modals, `aria-live` spin result).

@@ -38,6 +38,7 @@ console: Firestore created, the rules from `firestore.rules` published, and
 | `js/ratings.js` | Half-star widget, read-only stars, saving ratings |
 | `js/wheel.js` | Canvas wheel (theme-aware), spin animation, WebAudio sound, confetti |
 | `js/stats.js` | Client-side stats from movies + ratings + members |
+| `js/tmdb.js` | **Optional** TMDB film metadata (autocomplete, posters, year/runtime/genres) — off until a key is set |
 | `js/theme.js` | Theme switcher (localStorage; fires `spinema:themechange`) |
 | `js/app.js` | Orchestration: routing, live Firestore subscriptions, rendering, actions |
 | `firestore.rules` | Member-locked security rules (each club private to its `memberUids`) |

@@ -18,10 +18,11 @@ import {
 } from "./firebase.js";
 import { getMemberId, getName } from "./session.js";
 
-export async function addMovie(code, title) {
+// `meta` is optional TMDB metadata (tmdbId, year, posterPath, runtime, genres).
+export async function addMovie(code, title, meta = null) {
   const t = (title || "").trim();
   if (!t) return;
-  await addDoc(collection(db, "groups", code, "movies"), {
+  const data = {
     title: t,
     addedByName: getName(),
     addedByMemberId: getMemberId(),
@@ -30,7 +31,15 @@ export async function addMovie(code, title) {
     pickedAt: null,
     watchedAt: null,
     deadline: null,
-  });
+  };
+  if (meta) {
+    if (meta.tmdbId) data.tmdbId = meta.tmdbId;
+    if (meta.year) data.year = String(meta.year);
+    if (meta.posterPath) data.posterPath = meta.posterPath;
+    if (typeof meta.runtime === "number") data.runtime = meta.runtime;
+    if (Array.isArray(meta.genres) && meta.genres.length) data.genres = meta.genres;
+  }
+  await addDoc(collection(db, "groups", code, "movies"), data);
 }
 
 // Remove a not-yet-picked film from the wheel.

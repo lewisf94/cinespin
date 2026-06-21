@@ -17,6 +17,7 @@ import {
 } from "./wheel.js";
 import { buildStarRating, starsHtml, saveRating } from "./ratings.js";
 import { renderStats } from "./stats.js";
+import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, posterUrl } from "./tmdb.js";
 
 // ---- tiny helpers ----------------------------------------------------------
 const $ = (sel) => document.querySelector(sel);
@@ -501,6 +502,8 @@ function renderFilmCard() {
     countdownDeadline = ms(cf.deadline, Date.now());
     const rs = roundState(cf);
     const isSpinner = currentSpinnerId(state.group) === myId;
+    const movie = state.movies.find((m) => m.id === cf.movieId) || {};
+    const metaBits = filmMetaBits(movie);
 
     let actions;
     if (!rs.iWatched) {
@@ -513,7 +516,9 @@ function renderFilmCard() {
 
     card.innerHTML = `
       <div class="film-banner">This week's film</div>
+      ${movie.posterPath ? `<img class="film-poster" src="${esc(posterUrl(movie.posterPath, "w185"))}" alt="" loading="lazy" />` : ""}
       <h1 class="film-title">${esc(cf.title)}</h1>
+      ${metaBits ? `<div class="film-tmdb muted small">${esc(metaBits)}</div>` : ""}
       <div class="film-meta">
         <span>picked by <b>${esc(cf.spinnerName || "—")}</b></span>
         <span>added by <b>${esc(cf.addedByName || "—")}</b></span>
@@ -626,8 +631,11 @@ function renderMoviesTab() {
     .map(
       (m) => `
       <li class="movie-row">
-        <span class="movie-title">${esc(m.title)}</span>
-        <span class="movie-by muted small">added by ${esc(m.addedByName || "?")}</span>
+        ${posterThumb(m)}
+        <span class="movie-main">
+          <span class="movie-title">${esc(m.title)}${m.year ? ` <span class="muted small">(${esc(m.year)})</span>` : ""}</span>
+          <span class="movie-by muted small">added by ${esc(m.addedByName || "?")}</span>
+        </span>
         ${m.addedByMemberId === myId ? `<button class="link-btn" data-remove="${m.id}" title="Remove">Remove</button>` : ""}
       </li>`
     )
@@ -637,9 +645,12 @@ function renderMoviesTab() {
     <div class="card">
       <h3>Add a film to the wheel</h3>
       <div class="add-row">
-        <input id="movie-input" placeholder="Film title…" maxlength="80" />
+        <input id="movie-input" placeholder="Film title…" maxlength="80" autocomplete="off" />
         <button class="btn primary" id="add-movie-btn">Add</button>
       </div>
+      ${tmdbEnabled ? `<div id="tmdb-results" class="tmdb-results hidden"></div>
+      <p class="tmdb-attribution muted small">${esc(TMDB_STATEMENT)}
+        <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a></p>` : ""}
     </div>
     <div class="card">
       <h3>On the wheel <span class="muted">(${movies.length})</span></h3>
@@ -648,18 +659,83 @@ function renderMoviesTab() {
   `;
 
   const input = $("#movie-input");
-  const addNow = async () => {
+  const addNow = async (meta = null) => {
     const t = input.value.trim();
     if (!t) return;
     input.value = "";
     input.blur();
-    await addMovie(state.code, t);
+    hideTmdbResults();
+    await addMovie(state.code, t, meta);
   };
-  $("#add-movie-btn").addEventListener("click", addNow);
+  $("#add-movie-btn").addEventListener("click", () => addNow());
   input.addEventListener("keydown", (e) => e.key === "Enter" && addNow());
   pane.querySelectorAll("[data-remove]").forEach((b) =>
     b.addEventListener("click", () => removeMovie(state.code, b.dataset.remove))
   );
+  if (tmdbEnabled) wireTmdbAutocomplete(input);
+}
+
+function posterThumb(m, size = "w92") {
+  const url = m.posterPath ? posterUrl(m.posterPath, size) : "";
+  return url ? `<img class="poster-thumb" src="${esc(url)}" alt="" loading="lazy" />` : "";
+}
+
+// "1994  ·  142m  ·  Drama, Crime" from whatever TMDB metadata a film has.
+function filmMetaBits(m) {
+  const bits = [];
+  if (m.year) bits.push(String(m.year));
+  if (typeof m.runtime === "number" && m.runtime > 0) bits.push(m.runtime + "m");
+  if (Array.isArray(m.genres) && m.genres.length) bits.push(m.genres.slice(0, 3).join(", "));
+  return bits.join("  ·  ");
+}
+
+function hideTmdbResults() {
+  const r = $("#tmdb-results");
+  if (r) { r.classList.add("hidden"); r.innerHTML = ""; }
+}
+
+let tmdbTimer = null;
+// Debounced TMDB title autocomplete. The movies tab won't re-render while the
+// input is focused (editingWithin guard), so the dropdown survives typing.
+function wireTmdbAutocomplete(input) {
+  input.addEventListener("input", () => {
+    const q = input.value.trim();
+    clearTimeout(tmdbTimer);
+    if (q.length < 2) { hideTmdbResults(); return; }
+    tmdbTimer = setTimeout(async () => {
+      const results = await searchTitles(q);
+      const box = $("#tmdb-results");
+      if (!box || input.value.trim() !== q) return; // stale
+      if (!results.length) { hideTmdbResults(); return; }
+      box.innerHTML = results
+        .map(
+          (r, i) => `
+        <button type="button" class="tmdb-item" data-i="${i}">
+          ${r.posterPath
+            ? `<img class="poster-thumb tiny" src="${esc(posterUrl(r.posterPath, "w92"))}" alt="" loading="lazy" />`
+            : `<span class="poster-thumb tiny empty"></span>`}
+          <span class="tmdb-item-main">
+            <span class="tmdb-item-title">${esc(r.title)}${r.year ? ` <span class="muted small">(${esc(r.year)})</span>` : ""}</span>
+            ${r.genres && r.genres.length ? `<span class="muted small">${esc(r.genres.slice(0, 3).join(", "))}</span>` : ""}
+          </span>
+        </button>`
+        )
+        .join("");
+      box.classList.remove("hidden");
+      box.querySelectorAll(".tmdb-item").forEach((btn) =>
+        btn.addEventListener("click", async () => {
+          const r = results[+btn.dataset.i];
+          input.value = "";
+          input.blur();
+          hideTmdbResults();
+          const details = await getDetails(r.tmdbId);
+          await addMovie(state.code, r.title, details || r);
+        })
+      );
+    }, 300);
+  });
+  // Hide the dropdown shortly after the field loses focus (after any result click).
+  input.addEventListener("blur", () => setTimeout(hideTmdbResults, 150));
 }
 
 function renderHistoryTab() {
@@ -726,11 +802,12 @@ function renderWatchedCard(pane, movie, myId) {
   const card = document.createElement("div");
   card.className = "card watched-card";
   card.innerHTML = `
+    ${posterThumb(movie, "w92")}
     <div class="watched-head">
       <h3>${esc(movie.title)}</h3>
       <div class="watched-avg">${scores.length ? starsHtml(Math.round(avgScore * 2) / 2) + ` <b>${fmt2(avgScore)}</b> <span class="muted small">(${scores.length})</span>` : '<span class="muted small">no ratings</span>'}</div>
     </div>
-    <div class="muted small">added by ${esc(movie.addedByName || "?")}</div>
+    <div class="muted small">added by ${esc(movie.addedByName || "?")}${filmMetaBits(movie) ? " · " + esc(filmMetaBits(movie)) : ""}</div>
     <div class="ratings-list">${others || ""}</div>
     <div class="my-rating-mount"></div>
   `;
