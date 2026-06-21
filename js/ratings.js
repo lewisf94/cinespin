@@ -32,13 +32,22 @@ export function buildStarRating(initial, onChange) {
     right.addEventListener("click", () => set(i));
     left.addEventListener("mouseenter", () => paint(i - 0.5));
     right.addEventListener("mouseenter", () => paint(i));
+    // Keyboard: tabbing onto a half previews it, just like hover.
+    left.addEventListener("focus", () => paint(i - 0.5));
+    right.addEventListener("focus", () => paint(i));
 
     star.append(left, right);
     wrap.appendChild(star);
     stars.push(star);
   }
 
+  wrap.setAttribute("role", "group");
+  wrap.setAttribute("aria-label", "Your rating, from half a star to five stars");
   wrap.addEventListener("mouseleave", () => paint(value));
+  // When focus leaves the whole widget, snap the preview back to the saved value.
+  wrap.addEventListener("focusout", (e) => {
+    if (!wrap.contains(e.relatedTarget)) paint(value);
+  });
 
   function paint(v) {
     stars.forEach((star, idx) => {

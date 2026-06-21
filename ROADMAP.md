@@ -74,8 +74,10 @@ your Firebase project from here. I write the code; you deploy.
   Off by default (blank `TMDB_API_KEY` in `js/tmdb.js`, no requests until set); required attribution
   shown in-app. **[get a free TMDB v3 key]** (README). Genre/runtime now feed richer stats (#20).
 - [ ] **15. "Where to watch"** (TMDB watch providers; per-item JustWatch attribution required).
-- [ ] **16. Accessibility pass** across the 3 themes (contrast, focus rings, keyboard-operable star
-  widget + modals, `aria-live` spin result).
+- [x] **16. Accessibility pass** — consistent `:focus-visible` rings on every control, keyboard-operable
+  half-star widget (focus previews like hover) with group semantics, dialog roles + `aria-modal` +
+  Escape-to-close on modals, an `aria-live` region announcing the pick / whose turn, a labelled wheel
+  canvas, and a `prefers-reduced-motion` guard. (Deeper per-theme contrast tuning can still follow.)
 - [ ] **17. Ranked-choice "vote" mode** as an alternative to spinning.
 - [ ] **18. PWA** (manifest + service worker, offline shell).
 - [ ] **19. Web push reminders** (deadline / your turn / reviews unsealed; iOS needs home-screen install).

@@ -94,8 +94,8 @@
 
   <!-- Name modal -->
   <div id="name-modal" class="modal hidden">
-    <div class="modal-box">
-      <h2>What should we call you?</h2>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="name-modal-title">
+      <h2 id="name-modal-title">What should we call you?</h2>
       <p class="muted">So everyone knows who picked and rated what. No account needed.</p>
       <input id="name-input" placeholder="Your name" maxlength="24" />
       <button id="name-save" class="btn primary">Continue</button>
@@ -104,11 +104,14 @@
 
   <!-- Account modal (optional email-link sign-in to keep your club across devices) -->
   <div id="account-modal" class="modal hidden">
-    <div class="modal-box">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Save your account">
       <div id="account-body"></div>
       <button id="account-close" class="btn small">Close</button>
     </div>
   </div>
+
+  <!-- Screen-reader announcements (spin result, whose turn) -->
+  <div id="sr-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Web 1.0 taskbar (CSS reveals it only in that theme) -->
   <div id="taskbar">

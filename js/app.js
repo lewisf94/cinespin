@@ -126,6 +126,16 @@ function wireStaticUI() {
   $("#name-input").addEventListener("keydown", (e) => e.key === "Enter" && saveName());
   $("#account-btn").addEventListener("click", openAccountModal);
   $("#account-close").addEventListener("click", () => hide($("#account-modal")));
+  // Escape closes whichever modal is open.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("#account-modal").classList.contains("hidden")) {
+      hide($("#account-modal"));
+    } else if (!$("#name-modal").classList.contains("hidden")) {
+      hide($("#name-modal"));
+      if (namePromiseResolve) { namePromiseResolve(); namePromiseResolve = null; }
+    }
+  });
   $("#leave-btn").addEventListener("click", leaveGroup);
 
   $("#create-btn").addEventListener("click", handleCreate);
@@ -205,6 +215,33 @@ function wireStaticUI() {
 
 function updateMuteBtn() {
   $("#mute-btn").textContent = isMuted() ? "Muted" : "Sound";
+}
+
+// Announce round transitions to screen readers via the #sr-live region. Guarded
+// so it speaks only on an actual change (render runs on every snapshot).
+let lastAnnouncedFilm = null;
+let lastTurnAnnounced = null;
+function announceRound(cf) {
+  const live = $("#sr-live");
+  if (!live) return;
+  if (cf) {
+    if (cf.movieId !== lastAnnouncedFilm) {
+      lastAnnouncedFilm = cf.movieId;
+      lastTurnAnnounced = null;
+      live.textContent = `This week's film: ${cf.title}${cf.spinnerName ? `, picked by ${cf.spinnerName}` : ""}.`;
+    }
+  } else {
+    lastAnnouncedFilm = null;
+    const spinnerId = currentSpinnerId(state.group);
+    const key = spinnerId || "none";
+    if (key !== lastTurnAnnounced) {
+      lastTurnAnnounced = key;
+      const spinner = state.members.find((m) => m.id === spinnerId);
+      live.textContent = spinnerId === getMemberId()
+        ? "It's your turn to spin."
+        : `Waiting for ${spinner?.name || "the next person"} to spin.`;
+    }
+  }
 }
 
 // ---- name modal ------------------------------------------------------------
@@ -477,6 +514,7 @@ function render() {
     resetting = false;
   }
 
+  announceRound(state.group?.currentFilm);
   renderFilmCard();
 
   if (state.tab === "wheel") renderWheelTab();
@@ -583,7 +621,7 @@ function renderWheelTab() {
 
   pane.innerHTML = `
     <div class="wheel-wrap">
-      <canvas id="wheel-canvas" width="460" height="460"></canvas>
+      <canvas id="wheel-canvas" width="460" height="460" role="img" aria-label="Wheel of films"></canvas>
     </div>
     <div class="wheel-controls">
       <button class="btn primary big" id="spin-btn" ${isMyTurn && movies.length ? "" : "disabled"}>
