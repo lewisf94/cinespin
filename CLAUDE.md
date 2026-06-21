@@ -9,6 +9,8 @@ It's a **static site** — plain HTML/CSS/vanilla JS, **no build step** — back
 **Firebase** (Cloud Firestore + Anonymous Auth), deployed on GitHub Pages.
 
 - Live: https://lewisf94.github.io/spinema/
+- **Current status & handoff (read this first): [HANDOFF.md](./HANDOFF.md)**
+- Improvement backlog (done / deferred / open): [ROADMAP.md](./ROADMAP.md)
 - Technical / data-model reference: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Dev workflow & conventions: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - End-user Firebase setup: [README.md](./README.md)
