@@ -185,6 +185,25 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .watch-logo { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--line); object-fit: cover; background: var(--line); }
 .watch-name { padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 0.8rem; }
 .watch-attr { margin-top: 4px; }
+
+/* ---- who can watch (streaming-service match) ---- */
+.who-can-watch:empty { display: none; }
+.who-can-watch { margin: 10px 0 2px; }
+.who-label { text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.who-row { font-size: 0.9rem; margin: 2px 0; }
+.who-row.cant { color: var(--muted); }
+.who-note { margin: 8px 0 2px; }
+.svc-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.svc-chip { padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--panel); color: var(--text); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.svc-chip:hover { border-color: var(--accent); }
+.svc-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.svc-chip.on { background: var(--accent); color: var(--accent-contrast, #fff); border-color: var(--accent); }
+.add-tip { margin: 10px 0 0; }
+.avail { margin-left: auto; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.avail:empty { display: none; }
+.avail.ok { background: rgba(40, 140, 70, 0.14); color: #1c7c43; }
+.avail.warn { background: rgba(190, 130, 20, 0.16); color: #9a6a06; }
+.movie-row .avail + .link-btn { margin-left: 12px; }
 .watched-card .poster-thumb { float: left; width: 52px; height: 78px; margin: 2px 14px 6px 0; }
 .watched-card::after { content: ""; display: block; clear: both; }
 [data-theme="a24"] .film-poster { margin: 0 auto 16px; }

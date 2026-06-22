@@ -9,7 +9,7 @@ import {
 } from "./session.js";
 import {
   createGroup, joinGroup, currentSpinnerId, normaliseCode,
-  requestReset, approveReset, cancelReset, performReset,
+  requestReset, approveReset, cancelReset, performReset, setMyServices,
 } from "./groups.js";
 import { addMovie, removeMovie, commitSpin, markWatchedAck, finalizeRound, setDeadline } from "./movies.js";
 import {
@@ -17,7 +17,7 @@ import {
 } from "./wheel.js";
 import { buildStarRating, starsHtml, saveRating } from "./ratings.js";
 import { renderStats } from "./stats.js";
-import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, posterUrl, getWatchProviders, watchRegion } from "./tmdb.js";
+import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, posterUrl, getWatchProviders, watchRegion, STREAMING_SERVICES, canStream } from "./tmdb.js";
 
 // ---- tiny helpers ----------------------------------------------------------
 const $ = (sel) => document.querySelector(sel);
@@ -571,7 +571,7 @@ function renderFilmCard() {
       ${movie.posterPath ? `<img class="film-poster" src="${esc(posterUrl(movie.posterPath, "w185"))}" alt="" loading="lazy" />` : ""}
       <h1 class="film-title">${esc(cf.title)}</h1>
       ${metaBits ? `<div class="film-tmdb muted small">${esc(metaBits)}</div>` : ""}
-      ${tmdbEnabled && movie.tmdbId ? `<div id="watch-providers" class="watch-providers"></div>` : ""}
+      ${tmdbEnabled ? `<div id="watch-providers" class="watch-providers"></div><div id="who-can-watch" class="who-can-watch"></div>` : ""}
       <div class="film-meta">
         <span>picked by <b>${esc(cf.spinnerName || "—")}</b></span>
         <span>added by <b>${esc(cf.addedByName || "—")}</b></span>
@@ -590,7 +590,7 @@ function renderFilmCard() {
       ${isSpinner ? `<div class="force-line"><button class="text-link" id="force-finish">Wrap up now: reveal reviews and pass the turn</button></div>` : ""}
     `;
 
-    if (tmdbEnabled && movie.tmdbId) renderWatchProviders(movie.tmdbId);
+    if (tmdbEnabled) renderFilmAvailability(movie);
 
     const wb = $("#watched-btn");
     if (wb) wb.addEventListener("click", () => markWatchedAck(state.code, cf.movieId, myId));
@@ -682,6 +682,9 @@ function renderMoviesTab() {
   const myId = getMemberId();
   const movies = wheelMovies();
 
+  const me = state.members.find((m) => m.id === myId);
+  const mySvcs = me && Array.isArray(me.services) ? me.services : [];
+
   const list = movies
     .map(
       (m) => `
@@ -691,12 +694,23 @@ function renderMoviesTab() {
           <span class="movie-title">${esc(m.title)}${m.year ? ` <span class="muted small">(${esc(m.year)})</span>` : ""}</span>
           <span class="movie-by muted small">added by ${esc(m.addedByName || "?")}</span>
         </span>
+        ${tmdbEnabled ? `<span class="avail" data-mid="${m.id}"></span>` : ""}
         ${m.addedByMemberId === myId ? `<button class="link-btn" data-remove="${m.id}" title="Remove">Remove</button>` : ""}
       </li>`
     )
     .join("");
 
+  const servicesCard = tmdbEnabled ? `
+    <div class="card">
+      <h3>My streaming services</h3>
+      <p class="muted small">Pick what you subscribe to — Spinema uses it to show who can actually watch each film.</p>
+      <div class="svc-grid">${STREAMING_SERVICES
+        .map((s) => `<button type="button" class="svc-chip${mySvcs.includes(s.id) ? " on" : ""}" data-svc="${s.id}" aria-pressed="${mySvcs.includes(s.id)}">${esc(s.name)}</button>`)
+        .join("")}</div>
+    </div>` : "";
+
   pane.innerHTML = `
+    ${servicesCard}
     <div class="card">
       <h3>Add a film to the wheel</h3>
       <div class="add-row">
@@ -704,6 +718,7 @@ function renderMoviesTab() {
         <button class="btn primary" id="add-movie-btn">Add</button>
       </div>
       ${tmdbEnabled ? `<div id="tmdb-results" class="tmdb-results hidden"></div>
+      <p class="muted small add-tip">Try to add films <b>everyone can stream</b> — the badge by each film shows who's covered.</p>
       <p class="tmdb-attribution muted small">${esc(TMDB_STATEMENT)}
         <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a></p>` : ""}
     </div>
@@ -712,6 +727,18 @@ function renderMoviesTab() {
       <ul class="movie-list">${list || '<li class="muted">Nothing yet — add the first film.</li>'}</ul>
     </div>
   `;
+
+  pane.querySelectorAll("[data-svc]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const on = !b.classList.contains("on");
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+      const next = [...pane.querySelectorAll(".svc-chip.on")].map((x) => x.dataset.svc);
+      setMyServices(state.code, myId, next);
+    })
+  );
+
+  if (tmdbEnabled) fillWheelAvailability(movies);
 
   const input = $("#movie-input");
   const addNow = async (meta = null) => {
@@ -738,24 +765,72 @@ function renderMoviesTab() {
   if (tmdbEnabled) wireTmdbAutocomplete(input);
 }
 
+// Annotate each wheel film with who-can-watch coverage, compared against the
+// members who've set their streaming services. Lazy + cached per film; quietly
+// does nothing until at least one member has picked services.
+async function fillWheelAvailability(movies) {
+  const withSvc = state.members.filter((m) => Array.isArray(m.services) && m.services.length);
+  if (!withSvc.length) return;
+  for (const m of movies) {
+    const data = await filmProviders(m);
+    const el = document.querySelector(`.avail[data-mid="${m.id}"]`);
+    if (!el) continue; // tab re-rendered
+    const names = (data?.providers || []).map((p) => p.name);
+    if (!names.length) { el.className = "avail"; el.textContent = ""; continue; }
+    const cant = withSvc.filter((mem) => !canStream(mem.services, names));
+    if (!cant.length) {
+      el.className = "avail ok";
+      el.textContent = "Everyone can watch";
+    } else {
+      el.className = "avail warn";
+      el.textContent = `${withSvc.length - cant.length}/${withSvc.length} can watch`;
+      el.title = "Not on their services: " + cant.map((mem) => mem.name || "Someone").join(", ");
+    }
+  }
+}
+
 function posterThumb(m, size = "w92") {
   const url = m.posterPath ? posterUrl(m.posterPath, size) : "";
   return url ? `<img class="poster-thumb" src="${esc(url)}" alt="" loading="lazy" />` : "";
 }
 
-// "Where to watch" — fetched once per film (cached) and injected into the film
-// card. TMDB sources this from JustWatch, which we credit and link.
+// A film's TMDB id: stored on the doc, or resolved from its title (cached) so
+// "Where to watch" / "Who can watch" still work for films added before TMDB
+// enrichment. Returns null if TMDB is off or nothing matches. No DB write.
+const tmdbIdByTitle = {};
+async function filmTmdbId(movie) {
+  if (movie.tmdbId) return movie.tmdbId;
+  if (!tmdbEnabled || !movie.title) return null;
+  const key = movie.title.trim().toLowerCase();
+  if (key in tmdbIdByTitle) return tmdbIdByTitle[key];
+  const hits = await searchTitles(movie.title, 1);
+  return (tmdbIdByTitle[key] = hits.length ? hits[0].tmdbId : null);
+}
+
+// Watch providers for a film in the user's region, cached by tmdb id. TMDB
+// sources this from JustWatch, which we credit and link in the UI.
 const providerCache = {};
-async function renderWatchProviders(tmdbId) {
-  let data = providerCache[tmdbId];
-  if (data === undefined) {
-    data = await getWatchProviders(tmdbId, watchRegion());
-    providerCache[tmdbId] = data;
+async function filmProviders(movie) {
+  const id = await filmTmdbId(movie);
+  if (!id) return null;
+  if (providerCache[id] === undefined) {
+    providerCache[id] = await getWatchProviders(id, watchRegion());
   }
-  const el = $("#watch-providers");
-  if (!el) return; // card re-rendered away
-  if (!data || !data.providers.length) { el.innerHTML = ""; return; }
-  el.innerHTML = `
+  return providerCache[id];
+}
+
+// "Where to watch" + "Who can watch" — injected into the film-of-the-week card.
+async function renderFilmAvailability(movie) {
+  const data = await filmProviders(movie);
+  const provEl = $("#watch-providers");
+  const whoEl = $("#who-can-watch");
+  if (provEl) provEl.innerHTML = watchProvidersHtml(data);
+  if (whoEl) whoEl.innerHTML = whoCanWatchHtml(data);
+}
+
+function watchProvidersHtml(data) {
+  if (!data || !data.providers.length) return "";
+  return `
     <div class="watch-label muted small">Where to watch</div>
     <div class="watch-logos">${data.providers
       .slice(0, 6)
@@ -764,6 +839,26 @@ async function renderWatchProviders(tmdbId) {
         : `<span class="watch-name">${esc(p.name)}</span>`)
       .join("")}</div>
     <div class="watch-attr muted small">Streaming data by JustWatch${data.link ? ` &middot; <a href="${esc(data.link)}" target="_blank" rel="noopener">details</a>` : ""}</div>`;
+}
+
+// Cross-reference the film's providers with each member's saved services to say
+// who can actually stream it. Members who haven't set their services are left
+// out (we can't know) and nudged to add them on the Films tab.
+function whoCanWatchHtml(data) {
+  const providerNames = (data?.providers || []).map((p) => p.name);
+  const withSvc = state.members.filter((m) => Array.isArray(m.services) && m.services.length);
+  if (!providerNames.length) {
+    return `<div class="who-note muted small">No subscription streaming found for your region — it may be rental-only.</div>`;
+  }
+  if (!withSvc.length) {
+    return `<div class="who-note muted small">Add your streaming services on the Films tab to see who can watch this.</div>`;
+  }
+  const can = [], cant = [];
+  withSvc.forEach((m) => (canStream(m.services, providerNames) ? can : cant).push(m.name || "Someone"));
+  let html = `<div class="who-label muted small">Who can watch</div>`;
+  if (can.length) html += `<div class="who-row can"><b>Can watch:</b> ${can.map(esc).join(", ")}</div>`;
+  if (cant.length) html += `<div class="who-row cant"><b>Not on their services:</b> ${cant.map(esc).join(", ")}</div>`;
+  return html;
 }
 
 // "1994  ·  142m  ·  Drama, Crime" from whatever TMDB metadata a film has.

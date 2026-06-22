@@ -136,6 +136,17 @@ export async function renameGroup(code, newName) {
   await updateDoc(doc(db, "groups", code), { name: (newName || "").trim() || "Film Club" });
 }
 
+// Record which streaming services this member subscribes to (ids from
+// STREAMING_SERVICES). Used to show who can actually watch a film. Merges, so it
+// never clobbers the member's name/uid.
+export async function setMyServices(code, memberId, serviceIds) {
+  await setDoc(
+    doc(db, "groups", code, "members", memberId),
+    { services: Array.isArray(serviceIds) ? serviceIds : [] },
+    { merge: true }
+  );
+}
+
 // ---- group reset (requires unanimous approval) -----------------------------
 // A member proposes a reset; it only actually happens once EVERY current member
 // has approved. Anyone declining (or the proposer cancelling) clears it.

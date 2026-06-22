@@ -23,6 +23,7 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
 
   members/{memberId}                  # memberId = random id kept in the browser
     name, uid, joinedAt               # uid = Firebase auth uid (for the rules)
+    services: [serviceId, ...]        # optional: streaming services they have (for "who can watch")
 
   movies/{movieId}
     title, addedByName, addedByMemberId, addedAt

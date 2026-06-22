@@ -111,3 +111,42 @@ export async function getWatchProviders(tmdbId, region = "US") {
     return null;
   }
 }
+
+// ----------------------------------------------------------------------------
+//  Streaming services a member can say they subscribe to. `match` are lowercase
+//  substrings tested against TMDB watch-provider names, so small naming
+//  differences ("Disney Plus" vs "Disney+", "Now TV" vs "NOW") still line up.
+//  This is what powers "who can actually watch the film of the week".
+// ----------------------------------------------------------------------------
+export const STREAMING_SERVICES = [
+  { id: "netflix",   name: "Netflix",      match: ["netflix"] },
+  { id: "disney",    name: "Disney+",      match: ["disney"] },
+  { id: "prime",     name: "Amazon Prime", match: ["amazon prime", "prime video"] },
+  { id: "appletv",   name: "Apple TV+",    match: ["apple tv"] },
+  { id: "max",       name: "Max / HBO",    match: ["max", "hbo"] },
+  { id: "paramount", name: "Paramount+",   match: ["paramount"] },
+  { id: "hulu",      name: "Hulu",         match: ["hulu"] },
+  { id: "peacock",   name: "Peacock",      match: ["peacock"] },
+  { id: "now",       name: "NOW / Sky",    match: ["now tv", "sky"] },
+  { id: "iplayer",   name: "BBC iPlayer",  match: ["iplayer", "bbc"] },
+  { id: "itvx",      name: "ITVX",         match: ["itvx", "itv"] },
+  { id: "channel4",  name: "Channel 4",    match: ["channel 4", "all 4"] },
+  { id: "mubi",      name: "MUBI",         match: ["mubi"] },
+];
+
+const SERVICE_BY_ID = Object.fromEntries(STREAMING_SERVICES.map((s) => [s.id, s]));
+
+// Does owning `serviceId` get you this TMDB provider?
+function providerIsService(providerName, serviceId) {
+  const svc = SERVICE_BY_ID[serviceId];
+  if (!svc) return false;
+  const p = String(providerName || "").toLowerCase();
+  return svc.match.some((tok) => p.includes(tok));
+}
+
+// Can a member who subscribes to `serviceIds` stream a film offered on these
+// TMDB provider names? True if any of their services carries any provider.
+export function canStream(serviceIds, providerNames) {
+  return (serviceIds || []).some((id) =>
+    (providerNames || []).some((p) => providerIsService(p, id)));
+}
