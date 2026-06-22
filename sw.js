@@ -4,7 +4,7 @@
 // pass straight through to the network (never cached or intercepted), so the
 // realtime sync is unaffected. Bump CACHE to force clients off old assets.
 // --------------------------------------------------------------------------
-const CACHE = "spinema-v7";
+const CACHE = "spinema-v8";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.webmanifest",
   "./js/app.js", "./js/firebase.js", "./js/session.js", "./js/groups.js",
