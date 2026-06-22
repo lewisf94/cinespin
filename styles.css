@@ -220,7 +220,7 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 [data-theme="a24"] .film-poster { margin: 0 auto 16px; }
 
 /* ---- ratings / history ---- */
-.pending-card { border-color: var(--line-strong); }
+.pending-card { border-color: var(--line-strong); scroll-margin-top: 84px; }
 .sealed-banner { display: inline-block; border: 1px solid var(--line-strong); color: var(--muted); padding: 4px 12px; border-radius: 999px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
 .watched-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 .watched-head h3 { margin: 0; font-size: 1.4rem; }
@@ -235,7 +235,7 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .save-note { margin-left: 12px; color: var(--muted); }
 
 /* ---- stars ---- */
-.stars-input { font-size: 30px; display: inline-flex; line-height: 1; user-select: none; }
+.stars-input { font-size: 30px; display: inline-flex; line-height: 1; user-select: none; touch-action: none; }
 .stars-input .star { position: relative; display: inline-block; height: 1em; }
 .stars-input .bg { color: var(--star-empty); }
 .stars-input .fg { position: absolute; left: 0; top: 0; color: var(--accent); overflow: hidden; width: 0; white-space: nowrap; }

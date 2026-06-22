@@ -49,6 +49,39 @@ export function buildStarRating(initial, onChange) {
     if (!wrap.contains(e.relatedTarget)) paint(value);
   });
 
+  // Pointer/touch support: tap OR drag across the stars to pick a value (halves
+  // included). The .half buttons stay for keyboard; we swallow the click a
+  // pointer would synthesise so the two paths don't double-fire.
+  let dragging = false, usedPointer = false;
+  function valueFromX(clientX) {
+    const rect = wrap.getBoundingClientRect();
+    if (rect.width <= 0) return value;
+    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width - 0.0001);
+    const starW = rect.width / 5;
+    const idx = Math.floor(x / starW);
+    const frac = (x - idx * starW) / starW;
+    return Math.min(5, idx + (frac < 0.5 ? 0.5 : 1));
+  }
+  wrap.addEventListener("pointerdown", (e) => {
+    dragging = true; usedPointer = true;
+    try { wrap.setPointerCapture(e.pointerId); } catch (_) {}
+    paint(valueFromX(e.clientX));
+    e.preventDefault();
+  });
+  wrap.addEventListener("pointermove", (e) => {
+    if (dragging) { paint(valueFromX(e.clientX)); e.preventDefault(); }
+  });
+  wrap.addEventListener("pointerup", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    set(valueFromX(e.clientX));
+    e.preventDefault();
+  });
+  wrap.addEventListener("pointercancel", () => { dragging = false; paint(value); });
+  wrap.addEventListener("click", (e) => {
+    if (usedPointer) { usedPointer = false; e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
   function paint(v) {
     stars.forEach((star, idx) => {
       const i = idx + 1;

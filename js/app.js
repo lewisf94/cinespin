@@ -619,7 +619,14 @@ function renderFilmCard() {
     const wb = $("#watched-btn");
     if (wb) wb.addEventListener("click", () => markWatchedAck(state.code, cf.movieId, myId));
     const rb = $("#rate-btn");
-    if (rb) rb.addEventListener("click", () => switchTab("history"));
+    if (rb) rb.addEventListener("click", () => {
+      switchTab("history");
+      // Bring the rating section to the top of the screen.
+      requestAnimationFrame(() => {
+        ($("#tab-history .pending-card") || $("#tab-history"))
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
     const ep = card.querySelector("[data-edit-prov]");
     if (ep) ep.addEventListener("click", () => openProvidersEditor(ep.dataset.editProv));
     if (isSpinner) {
