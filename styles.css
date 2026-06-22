@@ -205,6 +205,10 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .movie-avail:empty { display: none; }
 .movie-avail.ok { color: #1c7c43; }
 .movie-avail.warn { color: #9a6a06; }
+.tmdb-item-avail { margin-top: 2px; }
+.tmdb-item-avail:empty { display: none; }
+.tmdb-item-avail.ok { color: #1c7c43; }
+.tmdb-item-avail.warn { color: #9a6a06; }
 .watched-card .poster-thumb { float: left; width: 52px; height: 78px; margin: 2px 14px 6px 0; }
 .watched-card::after { content: ""; display: block; clear: both; }
 [data-theme="a24"] .film-poster { margin: 0 auto 16px; }

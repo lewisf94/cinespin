@@ -779,33 +779,57 @@ function renderMoviesTab() {
   if (tmdbEnabled) wireTmdbAutocomplete(input);
 }
 
+// Build a where-to-watch / who-can-watch label from a film's provider data.
+// `withSvc` = members who've set their streaming services. Shared by the wheel
+// list and the add-film autocomplete.
+function availabilityLabel(data, withSvc) {
+  if (!data) return { text: "", cls: "muted", title: "" };
+  const names = data.providers.map((p) => p.name);
+  if (!names.length) return { text: "Not on subscription streaming in your region", cls: "muted", title: "" };
+  const shown = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
+  if (!withSvc.length) return { text: "Streaming on " + shown, cls: "muted", title: "" };
+  const cant = withSvc.filter((mem) => !canStream(mem.services, names));
+  return {
+    text: `Streaming on ${shown} — ${cant.length ? `${withSvc.length - cant.length}/${withSvc.length}` : "everyone"} can watch`,
+    cls: cant.length ? "warn" : "ok",
+    title: cant.length ? "Can't watch: " + cant.map((mem) => mem.name || "Someone").join(", ") : "",
+  };
+}
+
+const membersWithServices = () =>
+  state.members.filter((m) => Array.isArray(m.services) && m.services.length);
+
 // Annotate each wheel film with where it streams, and — once members have set
 // their streaming services — how many of them are covered. Lazy + cached per
 // film. Runs for every film, services or not, so the info shows up right away.
 async function fillWheelAvailability(movies) {
-  const withSvc = state.members.filter((m) => Array.isArray(m.services) && m.services.length);
+  const withSvc = membersWithServices();
   for (const m of movies) {
     const data = await filmProviders(m);
     const el = document.querySelector(`.movie-avail[data-mid="${m.id}"]`);
     if (!el) continue; // tab re-rendered
-    el.title = "";
-    if (!data) { el.className = "movie-avail small muted"; el.textContent = ""; continue; }
-    const names = data.providers.map((p) => p.name);
-    if (!names.length) {
-      el.className = "movie-avail small muted";
-      el.textContent = "Not on subscription streaming in your region";
-      continue;
-    }
-    const shown = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
-    if (!withSvc.length) {
-      el.className = "movie-avail small muted";
-      el.textContent = "Streaming on " + shown;
-      continue;
-    }
-    const cant = withSvc.filter((mem) => !canStream(mem.services, names));
-    el.className = cant.length ? "movie-avail small warn" : "movie-avail small ok";
-    el.textContent = `Streaming on ${shown} — ${cant.length ? `${withSvc.length - cant.length}/${withSvc.length}` : "everyone"} can watch`;
-    if (cant.length) el.title = "Can't watch: " + cant.map((mem) => mem.name || "Someone").join(", ");
+    const { text, cls, title } = availabilityLabel(data, withSvc);
+    el.className = `movie-avail small ${cls}`;
+    el.textContent = text;
+    el.title = title;
+  }
+}
+
+// Same idea for the add-film autocomplete dropdown: show what each result is
+// streaming on and how many members are covered. Bails if the user types on
+// (stale) so we don't write into a rebuilt dropdown.
+async function fillAutocompleteAvailability(results, q, input) {
+  const withSvc = membersWithServices();
+  for (let i = 0; i < results.length; i++) {
+    const data = await filmProviders({ tmdbId: results[i].tmdbId });
+    const box = $("#tmdb-results");
+    if (!box || input.value.trim() !== q) return; // user moved on
+    const el = box.querySelector(`.tmdb-item-avail[data-ai="${i}"]`);
+    if (!el) continue;
+    const { text, cls, title } = availabilityLabel(data, withSvc);
+    el.className = `tmdb-item-avail small ${cls}`;
+    el.textContent = text;
+    el.title = title;
   }
 }
 
@@ -921,6 +945,7 @@ function wireTmdbAutocomplete(input) {
           <span class="tmdb-item-main">
             <span class="tmdb-item-title">${esc(r.title)}${r.year ? ` <span class="muted small">(${esc(r.year)})</span>` : ""}</span>
             ${r.genres && r.genres.length ? `<span class="muted small">${esc(r.genres.slice(0, 3).join(", "))}</span>` : ""}
+            <span class="tmdb-item-avail small muted" data-ai="${i}"></span>
           </span>
         </button>`
         )
@@ -936,6 +961,7 @@ function wireTmdbAutocomplete(input) {
           await addMovie(state.code, r.title, details || r);
         })
       );
+      fillAutocompleteAvailability(results, q, input);
     }, 300);
   });
   // Hide the dropdown shortly after the field loses focus (after any result click).
