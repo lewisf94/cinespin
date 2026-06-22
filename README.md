@@ -172,9 +172,10 @@ Built in, and **enabled on the live site** (a key is set in `js/tmdb.js`); it's
   stores the year, runtime and genres (shown on the cards and in **Stats →
   Watch habits**). Typing a title and pressing **Add** still enriches it — the
   title is matched against TMDB automatically.
-- **"Where to watch"** on the film-of-the-week card — the streaming providers
-  for your region (works even for films added before a key was set; the match is
-  resolved from the title).
+- **"Where to watch"** under each film (and on the film-of-the-week card) — the
+  streaming providers for your region. The region is auto-detected (from your
+  browser locale, falling back to your timezone) and can be overridden on the
+  **Films** tab if it guesses wrong.
 - **"Who can watch"** — each member picks the streaming services they subscribe
   to (on the **Films** tab); Spinema cross-references them with where each film
   is streaming and shows who's covered, with a per-film badge on the wheel so you

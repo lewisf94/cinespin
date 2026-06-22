@@ -86,10 +86,68 @@ export async function getDetails(tmdbId) {
   }
 }
 
-// Best-guess streaming region from the browser locale (e.g. en-GB -> GB).
+// Common "where to watch" regions (TMDB keys provider results by ISO 3166-1
+// country code). Enough to cover most clubs; the user can override the guess.
+export const WATCH_REGIONS = [
+  { code: "GB", name: "United Kingdom" }, { code: "US", name: "United States" },
+  { code: "IE", name: "Ireland" },        { code: "CA", name: "Canada" },
+  { code: "AU", name: "Australia" },      { code: "NZ", name: "New Zealand" },
+  { code: "DE", name: "Germany" },        { code: "FR", name: "France" },
+  { code: "ES", name: "Spain" },          { code: "IT", name: "Italy" },
+  { code: "NL", name: "Netherlands" },    { code: "PT", name: "Portugal" },
+  { code: "SE", name: "Sweden" },         { code: "NO", name: "Norway" },
+  { code: "DK", name: "Denmark" },        { code: "FI", name: "Finland" },
+  { code: "PL", name: "Poland" },         { code: "IN", name: "India" },
+  { code: "BR", name: "Brazil" },         { code: "MX", name: "Mexico" },
+  { code: "JP", name: "Japan" },          { code: "ZA", name: "South Africa" },
+];
+
+// Minimal IANA-timezone -> country map, used to infer the country when the
+// browser locale carries no region (e.g. plain "en" reports US otherwise).
+const TZ_REGION = {
+  "Europe/London": "GB", "Europe/Dublin": "IE", "Europe/Lisbon": "PT",
+  "Europe/Paris": "FR", "Europe/Berlin": "DE", "Europe/Madrid": "ES",
+  "Europe/Rome": "IT", "Europe/Amsterdam": "NL", "Europe/Stockholm": "SE",
+  "Europe/Oslo": "NO", "Europe/Copenhagen": "DK", "Europe/Helsinki": "FI",
+  "Europe/Warsaw": "PL", "Atlantic/Canary": "ES",
+  "America/New_York": "US", "America/Chicago": "US", "America/Denver": "US",
+  "America/Los_Angeles": "US", "America/Phoenix": "US",
+  "America/Toronto": "CA", "America/Vancouver": "CA",
+  "America/Sao_Paulo": "BR", "America/Mexico_City": "MX",
+  "Australia/Sydney": "AU", "Australia/Melbourne": "AU", "Australia/Perth": "AU",
+  "Pacific/Auckland": "NZ", "Asia/Kolkata": "IN", "Asia/Tokyo": "JP",
+  "Africa/Johannesburg": "ZA",
+};
+
+const REGION_KEY = "spinema_region";
+
+// Best-guess streaming region: a manual override wins; otherwise the first
+// browser language that carries a country (en-GB -> GB), then the timezone's
+// country (so a plain "en" UK browser still resolves to GB), then US.
 export function watchRegion() {
-  const parts = (navigator.language || "en-US").split("-");
-  return (parts[1] || "US").toUpperCase();
+  try {
+    const saved = localStorage.getItem(REGION_KEY);
+    if (saved) return saved.toUpperCase();
+  } catch (_) {}
+  const langs = (navigator.languages && navigator.languages.length)
+    ? navigator.languages : [navigator.language || ""];
+  for (const l of langs) {
+    const m = /[-_]([A-Za-z]{2})$/.exec(l || "");
+    if (m) return m[1].toUpperCase();
+  }
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (TZ_REGION[tz]) return TZ_REGION[tz];
+  } catch (_) {}
+  return "US";
+}
+
+// Persist a manual region override (or clear it with a falsy value).
+export function setWatchRegion(code) {
+  try {
+    if (code) localStorage.setItem(REGION_KEY, String(code).toUpperCase());
+    else localStorage.removeItem(REGION_KEY);
+  } catch (_) {}
 }
 
 // "Where to watch" for a film in a region. TMDB sources this from JustWatch, so

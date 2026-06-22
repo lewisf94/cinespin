@@ -17,7 +17,7 @@ import {
 } from "./wheel.js";
 import { buildStarRating, starsHtml, saveRating } from "./ratings.js";
 import { renderStats } from "./stats.js";
-import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, posterUrl, getWatchProviders, watchRegion, STREAMING_SERVICES, canStream } from "./tmdb.js";
+import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, posterUrl, getWatchProviders, watchRegion, setWatchRegion, WATCH_REGIONS, STREAMING_SERVICES, canStream } from "./tmdb.js";
 
 // ---- tiny helpers ----------------------------------------------------------
 const $ = (sel) => document.querySelector(sel);
@@ -700,6 +700,7 @@ function renderMoviesTab() {
     )
     .join("");
 
+  const region = watchRegion();
   const servicesCard = tmdbEnabled ? `
     <div class="card">
       <h3>My streaming services</h3>
@@ -707,6 +708,12 @@ function renderMoviesTab() {
       <div class="svc-grid">${STREAMING_SERVICES
         .map((s) => `<button type="button" class="svc-chip${mySvcs.includes(s.id) ? " on" : ""}" data-svc="${s.id}" aria-pressed="${mySvcs.includes(s.id)}">${esc(s.name)}</button>`)
         .join("")}</div>
+      <label class="region-row muted small">Streaming region
+        <select id="region-select">${WATCH_REGIONS
+          .map((r) => `<option value="${r.code}"${r.code === region ? " selected" : ""}>${esc(r.name)}</option>`)
+          .join("")}</select>
+      </label>
+      <p class="muted small">Where-to-watch is region-specific — set this to where you watch.</p>
     </div>` : "";
 
   pane.innerHTML = `
@@ -737,6 +744,13 @@ function renderMoviesTab() {
       setMyServices(state.code, myId, next);
     })
   );
+
+  const regionSel = pane.querySelector("#region-select");
+  if (regionSel) regionSel.addEventListener("change", () => {
+    setWatchRegion(regionSel.value);
+    providerCache = {}; // cached providers were region-specific — refetch
+    render();
+  });
 
   if (tmdbEnabled) fillWheelAvailability(movies);
 
@@ -814,8 +828,9 @@ async function filmTmdbId(movie) {
 }
 
 // Watch providers for a film in the user's region, cached by tmdb id. TMDB
-// sources this from JustWatch, which we credit and link in the UI.
-const providerCache = {};
+// sources this from JustWatch, which we credit and link in the UI. Keyed by
+// tmdb id only, so it's reset (below) whenever the region changes.
+let providerCache = {};
 async function filmProviders(movie) {
   const id = await filmTmdbId(movie);
   if (!id) return null; // couldn't identify the film at all
