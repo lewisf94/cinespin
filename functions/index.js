@@ -21,14 +21,17 @@
 // ============================================================================
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue, Timestamp } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
 initializeApp();
 const db = getFirestore();
 
 const DEFAULT_DEADLINE_DAYS = 7;
 const SPIN_DURATION_MS = 6000;
+const REMIND_WITHIN_MS = 48 * 3600 * 1000; // nudge once the deadline is ≤48h away
 
 function requireAuthUid(request) {
   const uid = request.auth && request.auth.uid;
@@ -262,3 +265,72 @@ exports.approveReset = onCall(async (request) => {
   }
   return { ok: true, wiped: true };
 });
+
+// ---- web push: deadline reminders (scheduled) ------------------------------
+// Runs daily. For every club with a film in play whose deadline is within the
+// next REMIND_WITHIN_MS, it pushes a nudge to the members who haven't marked it
+// watched yet, on whatever devices they've registered (member doc `pushTokens`,
+// set by enablePush in js/push.js). Stale tokens reported by FCM are pruned.
+//
+// Requires Web Push to be turned on: a VAPID key in js/firebase.js so members
+// can register tokens, and this function deployed (Blaze plan). It does nothing
+// useful until members have opted in, so it's harmless to deploy early.
+exports.sendDeadlineReminders = onSchedule("every day 09:00", async () => {
+  const now = Date.now();
+  const groupsSnap = await db.collection("groups").get();
+
+  for (const groupDoc of groupsSnap.docs) {
+    const group = groupDoc.data();
+    const cf = group.currentFilm;
+    if (!cf || !cf.deadline) continue;
+    const deadlineMs = cf.deadline.toMillis ? cf.deadline.toMillis() : Number(cf.deadline);
+    const remaining = deadlineMs - now;
+    if (remaining > REMIND_WITHIN_MS) continue; // not close enough yet
+
+    // Who still hasn't watched? (members not in the movie's watchedBy.)
+    const movieSnap = await db.doc(`groups/${groupDoc.id}/movies/${cf.movieId}`).get();
+    const watchedBy = (movieSnap.exists && movieSnap.data().watchedBy) || [];
+    const membersSnap = await db.collection(`groups/${groupDoc.id}/members`).get();
+
+    const body = remaining <= 0
+      ? `"${cf.title}" is overdue — watch it and leave your rating.`
+      : `"${cf.title}" is due ${relativeDeadline(remaining)}. Don't forget to watch and rate.`;
+
+    for (const memberDoc of membersSnap.docs) {
+      const m = memberDoc.data();
+      if (watchedBy.includes(memberDoc.id)) continue; // already watched
+      const tokens = Array.isArray(m.pushTokens) ? m.pushTokens : [];
+      if (!tokens.length) continue;
+
+      const res = await getMessaging().sendEachForMulticast({
+        tokens,
+        data: {
+          title: "Spinema — watch-by reminder",
+          body,
+          url: "./?g=" + groupDoc.id,
+          tag: "deadline-" + cf.movieId,
+        },
+      });
+
+      // Prune tokens FCM says are dead, so they don't pile up forever.
+      const dead = [];
+      res.responses.forEach((r, i) => {
+        const code = r.error && r.error.code;
+        if (code === "messaging/registration-token-not-registered" ||
+            code === "messaging/invalid-argument") {
+          dead.push(tokens[i]);
+        }
+      });
+      if (dead.length) {
+        await memberDoc.ref.update({ pushTokens: FieldValue.arrayRemove(...dead) });
+      }
+    }
+  }
+});
+
+function relativeDeadline(ms) {
+  const h = Math.round(ms / 3600000);
+  if (h <= 1) return "within the hour";
+  if (h < 24) return `in about ${h}h`;
+  return `in ${Math.round(h / 24)} day(s)`;
+}

@@ -29,6 +29,7 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
   members/{memberId}                  # memberId = random id kept in the browser
     name, uid, joinedAt               # uid = Firebase auth uid (for the rules)
     services: [serviceId, ...]        # optional: streaming services they have (for "who can watch")
+    pushTokens: [fcmToken, ...]       # optional: per-device Web Push tokens (deadline reminders)
 
   movies/{movieId}
     title, addedByName, addedByMemberId, addedAt
@@ -185,3 +186,26 @@ a deploy step (the static front end itself stays no-build). When on, publish the
 **hardened** rules in `functions/firestore.rules`, which forbid clients from
 writing those fields directly — the functions become the only path. Full
 walkthrough: `functions/README.md`.
+
+## Web Push reminders (optional)
+
+Deadline nudges over Firebase Cloud Messaging. **Off by default** — the
+Messaging SDK is never fetched and no permission is asked until a Web Push
+**VAPID key** is set in `js/firebase.js` (`messagingVapidKey`).
+
+- **Opt-in (client).** From the Account modal a member taps *Turn on
+  reminders*; `js/push.js` (`enablePush`) registers `firebase-messaging-sw.js`,
+  requests notification permission, fetches this device's FCM token and
+  `arrayUnion`s it onto their member doc (`pushTokens`). Tokens are per-device,
+  so a member may have several.
+- **Send (server).** The scheduled Cloud Function `sendDeadlineReminders`
+  (`functions/`, runs daily) scans clubs with a film in play whose deadline is
+  within 48h, and pushes a data message to the `pushTokens` of members who
+  haven't marked it watched. Dead tokens (per the FCM response) are pruned.
+- **Two service workers.** FCM needs its own worker
+  (`firebase-messaging-sw.js`, compat SDK, shows background notifications),
+  separate from the app-shell worker (`sw.js`). The app handles foreground
+  messages itself via `onForegroundMessage` in `firebase.js`.
+
+Needs the Blaze plan (scheduled functions) and the VAPID key; nothing breaks if
+it's never turned on. Setup: README step 8.

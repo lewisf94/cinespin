@@ -113,6 +113,22 @@ key — can call Firebase. Skippable; the security rules are the real boundary.
 4. In App Check, keep Firestore in **Monitor** mode at first; once the metrics
    show your real traffic is verified, switch it to **Enforce**.
 
+### 8. (Optional) Web push deadline reminders
+A push notification as the watch-by deadline nears, for members who opt in.
+Skippable; everything works without it. Needs the **Blaze** plan (scheduled
+Cloud Functions) — there's a generous free tier, but a card on file.
+1. Firebase console: **Project settings → Cloud Messaging → Web Push
+   certificates → Generate key pair** → copy the **public key**.
+2. Paste it into `messagingVapidKey` in [`js/firebase.js`](./js/firebase.js).
+   (The repo already has `firebase-messaging-sw.js` at the root — keep the
+   Firebase config in it in sync with `js/firebase.js` if you ever change it.)
+3. Deploy the reminder function: from `functions/`, `npm install` then
+   `firebase deploy --only functions:sendDeadlineReminders` (it runs daily and
+   pushes to members who haven't watched yet). See [`functions/README.md`](./functions/README.md).
+4. In the app: **Account → Turn on reminders** on each device you want notified.
+   iOS only delivers Web Push to apps **installed to the home screen** (see PWA
+   below), so install it there first.
+
 ---
 
 ## Put it online with GitHub Pages

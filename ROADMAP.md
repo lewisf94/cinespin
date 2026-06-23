@@ -28,7 +28,12 @@ Working through these; **checked = shipped**. Pure front-end unless noted.
 
 ### Reminders
 - [x] **Add-to-calendar (.ics)** for the watch-by deadline
-- [ ] **Web push / email deadline nudges** *(needs FCM/VAPID keys + the optional Functions backend)*
+- [~] **Web push deadline nudges** — *scaffolded; needs a VAPID key + deploy.* Opt-in from
+  the Account modal (`js/push.js` stores per-device FCM tokens on the member doc); a daily
+  scheduled Cloud Function (`sendDeadlineReminders`) pushes a nudge to anyone who hasn't
+  watched yet as the deadline nears, pruning dead tokens. OFF by default (blank
+  `messagingVapidKey` in `js/firebase.js` — no SDK fetched, no permission prompt).
+  **[console: generate a Web Push VAPID key; Blaze + deploy `functions/`]** — README step 8.
 
 ### Richer film info (details popup)
 - [x] **Trailer + streaming inline** — "Watch trailer" (TMDB videos) + where-to-watch in the popup
@@ -126,7 +131,10 @@ Working through these; **checked = shipped**. Pure front-end unless noted.
   installable to a home screen, instant cached shell, offline fallback. The SW only touches
   same-origin GETs (network-first HTML, stale-while-revalidate assets), so Firebase/TMDB are never
   intercepted. Bump `CACHE` in `sw.js` to force-refresh assets.
-- [ ] **19. Web push reminders** (deadline / your turn / reviews unsealed; iOS needs home-screen install).
+- [~] **19. Web push reminders** — *scaffolded (deadline nudges); needs a VAPID key + deploy.*
+  Opt-in client (`js/push.js`) + `firebase-messaging-sw.js` + scheduled `sendDeadlineReminders`
+  function. Off by default. iOS needs the app installed to the home screen for Web Push. Your-turn /
+  reviews-unsealed nudges can follow the same path (add triggers in `functions/`).
 - [x] **20. Richer stats** from TMDB metadata — a "Watch habits" card (total hours + average length,
   top genres, films by decade) that appears on the Stats tab only once watched films carry TMDB
   metadata (#14). Degrades to nothing when absent. (`js/stats.js`.)

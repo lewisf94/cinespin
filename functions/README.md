@@ -16,9 +16,25 @@ club will almost certainly stay within it.
 
 | File | What it is |
 |------|-----------|
-| `index.js` | The callable functions (`commitSpin`, `setDeadline`, `markWatched`, `finalizeRound`, `requestReset`, `approveReset`, `cancelReset`) |
+| `index.js` | The callable functions (`commitSpin`, `setDeadline`, `markWatched`, `finalizeRound`, `requestReset`, `approveReset`, `cancelReset`) **plus** the scheduled `sendDeadlineReminders` (Web Push) |
 | `package.json` | Node 20, `firebase-admin` + `firebase-functions` |
 | `firestore.rules` | **Hardened** rules to publish *after* this is live (clients can no longer write the shared state directly) |
+
+## Web push reminders (independent of the server-authoritative mode)
+
+`sendDeadlineReminders` is a **scheduled** function (runs daily) that pushes a
+watch-by nudge to members who haven't watched the current film, using the FCM
+tokens they registered (`pushTokens` on each member doc). It's independent of
+`useFunctions` — you can deploy just it for reminders while leaving the
+round/turn/reset invariants client-trusted:
+
+```bash
+firebase deploy --only functions:sendDeadlineReminders
+```
+
+It does nothing until a **Web Push VAPID key** is set in `js/firebase.js` (so
+members can opt in) — full setup in the main [README](../README.md) step 8.
+Scheduled functions need the Blaze plan.
 
 ## Turn it on
 

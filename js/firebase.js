@@ -56,6 +56,16 @@ const firebaseConfig = {
 // enforce once traffic looks clean. See README.md.
 const recaptchaV3SiteKey = "";
 
+// Optional Web Push (Firebase Cloud Messaging) for deadline / turn reminders.
+// OFF by default — leave this blank and nothing changes (the Messaging SDK is
+// never fetched, so there's zero cost and no permission prompt until you turn
+// it on). To enable: in the Firebase console, Project settings -> Cloud
+// Messaging -> Web Push certificates, generate a key pair, and paste the
+// public "VAPID key" below. You also need firebase-messaging-sw.js at the site
+// root (already in the repo) and the scheduled reminder Cloud Function
+// deployed (functions/, sendDeadlineReminders). See README step 8.
+export const messagingVapidKey = "";
+
 // True once real values (not the placeholders) are filled in above.
 export const isConfigured =
   !!firebaseConfig.apiKey &&
@@ -106,6 +116,44 @@ export async function callFunction(name, data) {
   if (!_functions) _functions = _fnMod.getFunctions(app, FUNCTIONS_REGION);
   const res = await _fnMod.httpsCallable(_functions, name)(data);
   return res.data;
+}
+
+// ---- optional Web Push (Firebase Cloud Messaging) --------------------------
+// Lazy-loaded only when a VAPID key is set, so the default build never fetches
+// the Messaging SDK. getMessagingToken() registers the FCM service worker,
+// asks for notification permission, and returns the device token to store on
+// the member doc; onForegroundMessage() lets the app show in-page messages
+// while a tab is focused (the SW handles them when it isn't).
+let _messaging = null;
+async function getMessaging() {
+  if (!messagingVapidKey || !app) return null;
+  if (!("serviceWorker" in navigator) || !("Notification" in window)) return null;
+  if (!_messaging) {
+    const mod = await import(
+      "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js"
+    );
+    if (!(await mod.isSupported().catch(() => false))) return null;
+    _messaging = { mod, instance: mod.getMessaging(app) };
+  }
+  return _messaging;
+}
+
+export async function getMessagingToken() {
+  const m = await getMessaging();
+  if (!m) return null;
+  const reg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") return null;
+  return m.mod.getToken(m.instance, {
+    vapidKey: messagingVapidKey,
+    serviceWorkerRegistration: reg,
+  });
+}
+
+export async function onForegroundMessage(handler) {
+  const m = await getMessaging();
+  if (!m) return () => {};
+  return m.mod.onMessage(m.instance, handler);
 }
 
 // Re-export everything the rest of the app needs, so other modules import from

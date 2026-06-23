@@ -16,6 +16,7 @@ import {
   renderIdleWheel, chooseWinnerIndex, maybePlaySpin, setMuted, isMuted, resumeAudio,
 } from "./wheel.js";
 import { buildStarRating, starsHtml, saveRating } from "./ratings.js";
+import { pushAvailable, pushPermission, enablePush } from "./push.js";
 import { renderStats } from "./stats.js";
 import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, getMovieDetail, getRecommendations, posterUrl, getWatchProviders, watchRegion, setWatchRegion, WATCH_REGIONS, STREAMING_SERVICES, canStream } from "./tmdb.js";
 
@@ -319,7 +320,9 @@ function renderAccountBody() {
       <h2>Account saved</h2>
       <p class="muted">You're signed in as <b>${esc(getAccountEmail())}</b>. Your club
         travels with you — open the app with this email on another device, or
-        after clearing your browser, to pick up where you left off.</p>`;
+        after clearing your browser, to pick up where you left off.</p>
+      ${remindersHtml()}`;
+    wireReminders();
     return;
   }
   body.innerHTML = `
@@ -329,10 +332,55 @@ function renderAccountBody() {
       it. Totally optional.</p>
     <input id="account-email" type="email" placeholder="you@example.com" autocomplete="email" />
     <button id="account-send" class="btn primary">Email me a sign-in link</button>
-    <p id="account-msg" class="muted small"></p>`;
+    <p id="account-msg" class="muted small"></p>
+    ${remindersHtml()}`;
   $("#account-send").addEventListener("click", handleSendLink);
   $("#account-email").addEventListener("keydown", (e) => e.key === "Enter" && handleSendLink());
+  wireReminders();
   $("#account-email").focus();
+}
+
+// Web Push opt-in (only shown when reminders are turned on for this build).
+function remindersHtml() {
+  if (!pushAvailable()) return "";
+  const perm = pushPermission();
+  if (perm === "granted") {
+    return `<hr><h2>Reminders</h2>
+      <p class="muted">Reminders are on for this device — you'll get a nudge as the
+        watch-by deadline approaches.</p>`;
+  }
+  if (perm === "denied") {
+    return `<hr><h2>Reminders</h2>
+      <p class="muted">Notifications are blocked for this site in your browser
+        settings. Allow them there to get deadline reminders.</p>`;
+  }
+  return `<hr><h2>Reminders</h2>
+    <p class="muted">Get a push notification on this device as the watch-by
+      deadline approaches. Optional.</p>
+    <button id="push-enable" class="btn">Turn on reminders</button>
+    <p id="push-msg" class="muted small"></p>`;
+}
+
+function wireReminders() {
+  const btn = $("#push-enable");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    const msg = $("#push-msg");
+    btn.disabled = true;
+    if (msg) msg.textContent = "";
+    try {
+      const ok = await enablePush(state.code, getMemberId());
+      if (ok) {
+        renderAccountBody();
+      } else {
+        if (msg) msg.textContent = "Reminders weren't turned on (permission declined).";
+        btn.disabled = false;
+      }
+    } catch (e) {
+      if (msg) msg.textContent = "Couldn't turn on reminders: " + e.message;
+      btn.disabled = false;
+    }
+  });
 }
 
 async function handleSendLink() {
@@ -796,7 +844,7 @@ function renderWheelTab() {
         ? "No films everyone can stream — add some, or turn off the filter."
         : wheelStatus(isMyTurn, movies.length, spinnerId)}</p>
       ${tmdbEnabled ? `<label class="stream-filter"><input type="checkbox" id="stream-filter-toggle"${filterOn ? " checked" : ""}> Only spin films everyone can stream</label>${filterOn && hiddenCount ? `<p class="muted small filter-note">${hiddenCount} hidden — not everyone can stream ${hiddenCount > 1 ? "them" : "it"}.</p>` : ""}` : ""}
-      ${isMyTurn && movies.length >= 2 ? `<div class="vote-start"><button class="btn" id="start-vote-btn">Too many to spin? Vote instead</button></div>` : ""}
+      ${isMyTurn && movies.length >= 2 ? `<div class="vote-start"><button class="btn" id="start-vote-btn">Don't want to leave it to chance? Vote instead</button></div>` : ""}
     </div>
     ${order.length ? `<div class="turn-order"><div class="small">Turn order</div><div class="turn-chips">${orderHtml}</div></div>` : ""}
   `;
