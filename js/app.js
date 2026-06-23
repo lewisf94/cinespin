@@ -1038,6 +1038,15 @@ function renderMoviesTab() {
       ${tmdbEnabled ? `<div id="tmdb-results" class="tmdb-results hidden"></div>
       <p class="muted small add-tip">Try to add films <b>everyone can stream</b> — the badge by each film shows who's covered.</p>` : ""}
       <p class="muted small import-row">Have a Letterboxd watchlist? <label class="text-link" for="lb-file">Import the CSV</label><input id="lb-file" type="file" accept=".csv,text/csv" hidden></p>
+      <details class="lb-help muted small">
+        <summary>How do I get the CSV?</summary>
+        <ol>
+          <li>On <b>letterboxd.com</b> in a web browser (the export isn't in the phone app), open <b>Settings</b> &rarr; <b>Import &amp; Export</b>.</li>
+          <li>Click <b>Export Your Data</b> — it downloads a <code>.zip</code>.</li>
+          <li>Unzip it and find <code>watchlist.csv</code> inside.</li>
+          <li>Back here, choose that file with <b>Import the CSV</b> above.</li>
+        </ol>
+      </details>
       ${tmdbEnabled ? `<p class="tmdb-attribution muted small">${esc(TMDB_STATEMENT)}
         <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a></p>` : ""}
     </div>
