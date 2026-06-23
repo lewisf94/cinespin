@@ -109,6 +109,12 @@ of [`firestore.rules`](./firestore.rules) and `ARCHITECTURE.md`.
      delivery, set up **custom SMTP** with your own domain under
      **Authentication → Templates → (pencil) → Customize SMTP settings**; the
      sender name/subject can be tweaked on that same Templates screen.
+   - **If you restrict the Web API key by HTTP referrer** (the optional hardening
+     in step 9 / ROADMAP #6) you **must also allow the auth handler's domain**, or
+     the sign-in link 403s with `API_KEY_HTTP_REFERRER_BLOCKED`. In **Google Cloud
+     Console → APIs & Services → Credentials → (your browser key) → Website
+     restrictions**, include `https://cinewheel-79636.firebaseapp.com/*` and
+     `https://cinewheel-79636.web.app/*` alongside `https://lewisf94.github.io/*`.
 
 ### 6. Paste your config into the app
 1. Open [`js/firebase.js`](./js/firebase.js).
