@@ -207,10 +207,14 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .lb-help li { margin: 4px 0; }
 .lb-tip { margin: 8px 0 0; opacity: 0.85; }
 .lb-help code { border: 1px solid var(--line); background: var(--panel-2); padding: 0 4px; border-radius: var(--radius); }
-.import-all { display: block; font-weight: 600; margin-bottom: 8px; }
+.import-all { display: flex; gap: 10px; align-items: center; font-weight: 600; margin-bottom: 12px; }
 .import-list { list-style: none; padding: 0; margin: 0; max-height: 48vh; overflow-y: auto; }
 .import-list li { padding: 4px 0; }
-.import-list label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.import-list label { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.imp-ttl { flex: 1; min-width: 0; line-height: 1.35; }
+/* Override the global input{width:100%} so these checkboxes stay small boxes,
+   not full-width fields (which squashed the titles into a per-word column). */
+.modal-box .import-all input, .modal-box .import-list input { width: 18px; height: 18px; flex-shrink: 0; margin: 0; padding: 0; }
 .rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 8px; }
 .rec { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; background: none; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; cursor: pointer; color: var(--text); font: inherit; }
 .rec:hover { border-color: var(--accent); }

@@ -1169,7 +1169,7 @@ function openImport(films) {
   body.innerHTML = `
     <label class="import-all"><input type="checkbox" id="import-select-all" checked> Select all (${films.length})</label>
     <ul class="import-list">${films
-      .map((f, i) => `<li><label><input type="checkbox" class="import-ck" data-i="${i}" checked> ${esc(f.name)}${f.year ? ` <span class="muted small">(${esc(f.year)})</span>` : ""}</label></li>`)
+      .map((f, i) => `<li><label><input type="checkbox" class="import-ck" data-i="${i}" checked><span class="imp-ttl">${esc(f.name)}${f.year ? ` <span class="muted small">(${esc(f.year)})</span>` : ""}</span></label></li>`)
       .join("")}</ul>`;
   show($("#import-modal"));
   $("#import-select-all").addEventListener("change", (e) => {
