@@ -182,6 +182,18 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .tmdb-item-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .tmdb-item-title { font-weight: 600; }
 .tmdb-attribution { margin: 10px 0 0; }
+.import-row { margin: 8px 0 0; }
+.import-all { display: block; font-weight: 600; margin-bottom: 8px; }
+.import-list { list-style: none; padding: 0; margin: 0; max-height: 48vh; overflow-y: auto; }
+.import-list li { padding: 4px 0; }
+.import-list label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 8px; }
+.rec { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; background: none; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; cursor: pointer; color: var(--text); font: inherit; }
+.rec:hover { border-color: var(--accent); }
+.rec-poster { width: 66px; height: 99px; object-fit: cover; border-radius: 4px; background: var(--line); }
+.rec-poster.empty { display: block; }
+.rec-title { font-size: 0.82rem; line-height: 1.2; }
+.rec-add { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
 .film-poster { display: block; width: 120px; height: auto; border-radius: 6px; border: 1px solid var(--line); margin: 18px auto 14px; }
 .film-tmdb { margin: 4px 0 0; }
 .watch-providers:empty { display: none; }

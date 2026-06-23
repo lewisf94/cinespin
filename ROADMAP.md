@@ -19,7 +19,7 @@ Working through these; **checked = shipped**. Pure front-end unless noted.
 - [x] **Vote a film off the wheel** — anyone can flag a wheel film for removal; once **every member except the one who added it** has voted to remove, it's dropped. Same unanimous-consent pattern as the group reset; votes stored on the movie doc.
 
 ### Import
-- [ ] **Import a Letterboxd watchlist** — upload the exported watchlist CSV (Letterboxd → Settings → Import & Export → Export), show the films with checkboxes (select all / pick a few), then add the chosen ones to the wheel (enriched via TMDB by title+year). Pure front-end (file input + CSV parse + `addMovie`).
+- [x] **Import a Letterboxd watchlist** — upload the exported watchlist CSV, pick films with checkboxes, add to the wheel (enriched via TMDB by title+year).
 
 ### Social / engagement
 - [ ] **Discussion thread per film** — comments/reactions on each watched film, unlocked once reviews reveal *(new Firestore subcollection + rules)*
@@ -32,7 +32,7 @@ Working through these; **checked = shipped**. Pure front-end unless noted.
 
 ### Richer film info (details popup)
 - [x] **Trailer + streaming inline** — "Watch trailer" (TMDB videos) + where-to-watch in the popup
-- [ ] **TMDB recommendations** — "if you liked last week's pick…" on the Films tab
+- [x] **TMDB recommendations** — "if you liked last week's pick…" on the Films tab
 
 ### Stats / wrap-up
 - [x] **Season recap ("Spinema Wrapped")** — end-of-cycle summary popup

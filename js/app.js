@@ -17,7 +17,7 @@ import {
 } from "./wheel.js";
 import { buildStarRating, starsHtml, saveRating } from "./ratings.js";
 import { renderStats } from "./stats.js";
-import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, getMovieDetail, posterUrl, getWatchProviders, watchRegion, setWatchRegion, WATCH_REGIONS, STREAMING_SERVICES, canStream } from "./tmdb.js";
+import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, getMovieDetail, getRecommendations, posterUrl, getWatchProviders, watchRegion, setWatchRegion, WATCH_REGIONS, STREAMING_SERVICES, canStream } from "./tmdb.js";
 
 // ---- tiny helpers ----------------------------------------------------------
 const $ = (sel) => document.querySelector(sel);
@@ -128,12 +128,15 @@ function wireStaticUI() {
   $("#account-btn").addEventListener("click", openAccountModal);
   $("#account-close").addEventListener("click", () => hide($("#account-modal")));
   wireProvidersModal();
+  wireImportModal();
   $("#movie-modal-close").addEventListener("click", closeMovieModal);
   $("#recap-close").addEventListener("click", () => hide($("#recap-modal")));
   // Escape closes whichever modal is open.
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (!$("#recap-modal").classList.contains("hidden")) {
+    if (!$("#import-modal").classList.contains("hidden")) {
+      hide($("#import-modal"));
+    } else if (!$("#recap-modal").classList.contains("hidden")) {
       hide($("#recap-modal"));
     } else if (!$("#movie-modal").classList.contains("hidden")) {
       closeMovieModal();
@@ -858,14 +861,16 @@ function renderMoviesTab() {
         <button class="btn primary" id="add-movie-btn">Add</button>
       </div>
       ${tmdbEnabled ? `<div id="tmdb-results" class="tmdb-results hidden"></div>
-      <p class="muted small add-tip">Try to add films <b>everyone can stream</b> — the badge by each film shows who's covered.</p>
-      <p class="tmdb-attribution muted small">${esc(TMDB_STATEMENT)}
+      <p class="muted small add-tip">Try to add films <b>everyone can stream</b> — the badge by each film shows who's covered.</p>` : ""}
+      <p class="muted small import-row">Have a Letterboxd watchlist? <label class="text-link" for="lb-file">Import the CSV</label><input id="lb-file" type="file" accept=".csv,text/csv" hidden></p>
+      ${tmdbEnabled ? `<p class="tmdb-attribution muted small">${esc(TMDB_STATEMENT)}
         <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a></p>` : ""}
     </div>
     <div class="card">
       <h3>On the wheel <span class="muted">(${movies.length})</span></h3>
       <ul class="movie-list">${list || '<li class="muted">Nothing yet — add the first film.</li>'}</ul>
     </div>
+    <div id="tmdb-recs"></div>
   `;
 
   pane.querySelectorAll("[data-svc]").forEach((b) =>
@@ -917,6 +922,125 @@ function renderMoviesTab() {
     b.addEventListener("click", () => removeMovie(state.code, b.dataset.remove))
   );
   if (tmdbEnabled) wireTmdbAutocomplete(input);
+
+  const lb = $("#lb-file");
+  if (lb) lb.addEventListener("change", () => {
+    const file = lb.files && lb.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { openImport(parseLetterboxd(String(reader.result || ""))); lb.value = ""; };
+    reader.readAsText(file);
+  });
+
+  // "More like…" recommendations, based on the current/most-recent film.
+  if (tmdbEnabled) {
+    const cf = state.group?.currentFilm;
+    const cur = cf && state.movies.find((m) => m.id === cf.movieId);
+    const base = (cur && cur.tmdbId) ? cur
+      : state.movies.filter((m) => m.status === "watched" && m.tmdbId)
+          .sort((a, b) => ms(b.watchedAt, 0) - ms(a.watchedAt, 0))[0];
+    if (base) renderRecommendations(base);
+  }
+}
+
+// ---- Letterboxd import ------------------------------------------------------
+// Minimal CSV parser (handles quoted fields with commas and "" escapes).
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"') { inQ = true; }
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") { field += c; }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+function parseLetterboxd(text) {
+  const rows = parseCsv(text).filter((r) => r.length && r.some((c) => c.trim()));
+  if (!rows.length) return [];
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const ni = header.indexOf("name"), yi = header.indexOf("year");
+  if (ni === -1) return []; // not a Letterboxd export
+  return rows.slice(1)
+    .map((r) => ({ name: (r[ni] || "").trim(), year: yi >= 0 ? (r[yi] || "").trim() : "" }))
+    .filter((f) => f.name);
+}
+
+let importFilms = [];
+function openImport(films) {
+  importFilms = films;
+  const body = $("#import-body");
+  if (!films.length) {
+    body.innerHTML = `<p class="muted">No films found — make sure it's a Letterboxd watchlist CSV export.</p>`;
+    show($("#import-modal"));
+    return;
+  }
+  body.innerHTML = `
+    <label class="import-all"><input type="checkbox" id="import-select-all" checked> Select all (${films.length})</label>
+    <ul class="import-list">${films
+      .map((f, i) => `<li><label><input type="checkbox" class="import-ck" data-i="${i}" checked> ${esc(f.name)}${f.year ? ` <span class="muted small">(${esc(f.year)})</span>` : ""}</label></li>`)
+      .join("")}</ul>`;
+  show($("#import-modal"));
+  $("#import-select-all").addEventListener("change", (e) => {
+    body.querySelectorAll(".import-ck").forEach((c) => { c.checked = e.target.checked; });
+  });
+}
+function wireImportModal() {
+  $("#import-close").addEventListener("click", () => hide($("#import-modal")));
+  $("#import-add").addEventListener("click", async () => {
+    const picks = [...$("#import-body").querySelectorAll(".import-ck:checked")].map((c) => importFilms[+c.dataset.i]).filter(Boolean);
+    const btn = $("#import-add");
+    if (!picks.length) { hide($("#import-modal")); return; }
+    btn.disabled = true;
+    btn.textContent = `Adding 0/${picks.length}…`;
+    for (let i = 0; i < picks.length; i++) {
+      const f = picks[i];
+      let meta = null;
+      if (tmdbEnabled) {
+        const hits = await searchTitles(f.name, 6);
+        const hit = (f.year && hits.find((h) => String(h.year) === String(f.year))) || hits[0];
+        if (hit) meta = (await getDetails(hit.tmdbId)) || hit;
+      }
+      await addMovie(state.code, f.name, meta);
+      btn.textContent = `Adding ${i + 1}/${picks.length}…`;
+    }
+    btn.disabled = false;
+    btn.textContent = "Add selected";
+    hide($("#import-modal"));
+  });
+}
+
+// ---- recommendations --------------------------------------------------------
+async function renderRecommendations(base) {
+  const recs = await getRecommendations(base.tmdbId);
+  const el = $("#tmdb-recs");
+  if (!el) return; // tab changed
+  const have = new Set();
+  state.movies.forEach((m) => { if (m.tmdbId) have.add(String(m.tmdbId)); have.add((m.title || "").toLowerCase()); });
+  const list = recs.filter((r) => !have.has(String(r.tmdbId)) && !have.has((r.title || "").toLowerCase())).slice(0, 6);
+  if (!list.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="card"><h3>More like <em>${esc(base.title)}</em></h3>
+    <div class="rec-grid">${list
+      .map((r, i) => `<button class="rec" data-rec="${i}" title="Add to wheel">
+        ${r.posterPath ? `<img class="rec-poster" src="${esc(posterUrl(r.posterPath, "w92"))}" alt="" loading="lazy" />` : `<span class="rec-poster empty"></span>`}
+        <span class="rec-title">${esc(r.title)}${r.year ? ` <span class="muted small">(${esc(r.year)})</span>` : ""}</span>
+        <span class="rec-add">+ Add</span>
+      </button>`)
+      .join("")}</div></div>`;
+  el.querySelectorAll(".rec").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const r = list[+b.dataset.rec];
+      b.disabled = true;
+      const details = await getDetails(r.tmdbId);
+      await addMovie(state.code, r.title, details || r);
+    })
+  );
 }
 
 // Build a where-to-watch / who-can-watch label from a film's provider data.

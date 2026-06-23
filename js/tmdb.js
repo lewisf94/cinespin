@@ -207,6 +207,26 @@ export async function getWatchProviders(tmdbId, region = "US") {
 //  differences ("Disney Plus" vs "Disney+", "Now TV" vs "NOW") still line up.
 //  This is what powers "who can actually watch the film of the week".
 // ----------------------------------------------------------------------------
+// "More like this" — TMDB recommendations for a film. Returns light results
+// (same shape as searchTitles). Never throws.
+export async function getRecommendations(tmdbId, limit = 10) {
+  if (!tmdbEnabled || !tmdbId) return [];
+  try {
+    const res = await fetch(`${API}/movie/${tmdbId}/recommendations?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.results || []).slice(0, limit).map((r) => ({
+      tmdbId: r.id,
+      title: r.title || r.original_title || "",
+      year: yearOf(r.release_date),
+      posterPath: r.poster_path || "",
+      genres: (r.genre_ids || []).map((id) => GENRES[id]).filter(Boolean),
+    }));
+  } catch (_) {
+    return [];
+  }
+}
+
 export const STREAMING_SERVICES = [
   { id: "netflix",   name: "Netflix",      match: ["netflix"] },
   { id: "disney",    name: "Disney+",      match: ["disney"] },
