@@ -178,6 +178,11 @@ export async function renameGroup(code, newName) {
   await updateDoc(doc(db, "groups", code), { name: (newName || "").trim() || "Film Club" });
 }
 
+// Toggle "only spin films everyone can stream" for the whole club.
+export async function setStreamFilter(code, on) {
+  await updateDoc(doc(db, "groups", code), { streamFilter: !!on });
+}
+
 // Record which streaming services this member subscribes to (ids from
 // STREAMING_SERVICES). Used to show who can actually watch a film. Merges, so it
 // never clobbers the member's name/uid.

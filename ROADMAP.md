@@ -14,7 +14,7 @@ your Firebase project from here. I write the code; you deploy.
 Working through these; **checked = shipped**. Pure front-end unless noted.
 
 ### Picking the film
-- [ ] **Spin only what everyone can stream** — toggle so the wheel/spin excludes films not on every member's services
+- [x] **Spin only what everyone can stream** — toggle so the wheel/spin excludes films not on every member's services
 - [ ] **Ranked-choice / approval vote mode** — alternative to the random spin *(needs a product decision: replace the spin or run alongside? which method?)*
 - [ ] **Vote a film off the wheel** — anyone can flag a wheel film for removal; once **every member except the one who added it** has voted to remove, it's dropped. Same unanimous-consent pattern as the group reset; votes stored on the movie doc.
 

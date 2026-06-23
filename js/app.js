@@ -9,7 +9,7 @@ import {
 } from "./session.js";
 import {
   createGroup, joinGroup, currentSpinnerId, normaliseCode,
-  requestReset, approveReset, cancelReset, performReset, setMyServices, kickMember,
+  requestReset, approveReset, cancelReset, performReset, setMyServices, kickMember, setStreamFilter,
 } from "./groups.js";
 import { addMovie, removeMovie, commitSpin, markWatchedAck, finalizeRound, setDeadline, setMovieServices } from "./movies.js";
 import {
@@ -696,7 +696,14 @@ function renderWheelTab() {
   const myId = getMemberId();
   const spinnerId = currentSpinnerId(state.group);
   const isMyTurn = spinnerId === myId && !state.group?.currentFilm;
-  const movies = wheelMovies();
+  const filterOn = tmdbEnabled && !!state.group?.streamFilter;
+  let movies = wheelMovies();
+  const allCount = movies.length;
+  if (filterOn) {
+    ensureCoverage(movies);                              // async; re-renders when ready
+    movies = movies.filter((m) => filmEligible(m) !== false); // keep eligible + still-loading
+  }
+  const hiddenCount = allCount - movies.length;
 
   const order = orderedMembers();
   const adminId = groupAdminId();
@@ -719,12 +726,18 @@ function renderWheelTab() {
       <button class="btn primary big" id="spin-btn" ${isMyTurn && movies.length ? "" : "disabled"}>
         Spin
       </button>
-      <p class="wheel-status">${wheelStatus(isMyTurn, movies.length, spinnerId)}</p>
+      <p class="wheel-status">${(filterOn && allCount && !movies.length)
+        ? "No films everyone can stream — add some, or turn off the filter."
+        : wheelStatus(isMyTurn, movies.length, spinnerId)}</p>
+      ${tmdbEnabled ? `<label class="stream-filter"><input type="checkbox" id="stream-filter-toggle"${filterOn ? " checked" : ""}> Only spin films everyone can stream</label>${filterOn && hiddenCount ? `<p class="muted small filter-note">${hiddenCount} hidden — not everyone can stream ${hiddenCount > 1 ? "them" : "it"}.</p>` : ""}` : ""}
     </div>
     ${order.length ? `<div class="turn-order"><div class="small">Turn order</div><div class="turn-chips">${orderHtml}</div></div>` : ""}
   `;
 
   renderIdleWheel($("#wheel-canvas"), movies);
+
+  const sf = $("#stream-filter-toggle");
+  if (sf) sf.addEventListener("change", () => setStreamFilter(state.code, sf.checked));
 
   pane.querySelectorAll("[data-kick]").forEach((b) =>
     b.addEventListener("click", () => {
@@ -1088,6 +1101,35 @@ function serviceIdsFromProviders(names) {
   return STREAMING_SERVICES
     .filter((s) => (names || []).some((p) => s.match.some((t) => String(p).toLowerCase().includes(t))))
     .map((s) => s.id);
+}
+
+// "Can everyone (who's set services) stream this film?" — cached by a signature
+// of members' services + region, so it self-invalidates when those change. The
+// network part is already cached in providerCache.
+const coverageCache = {};
+function svcSignature() {
+  return membersWithServices()
+    .map((m) => m.id + ":" + (m.services || []).slice().sort().join("+"))
+    .sort().join("|") + "@" + watchRegion();
+}
+function filmEligible(movie) {
+  if (!membersWithServices().length) return true; // no services set -> no constraint
+  return coverageCache[svcSignature() + "::" + movie.id]; // true | false | undefined (loading)
+}
+async function ensureCoverage(movies) {
+  const withSvc = membersWithServices();
+  if (!withSvc.length) return;
+  const sig = svcSignature();
+  let changed = false;
+  for (const m of movies) {
+    const key = sig + "::" + m.id;
+    if (key in coverageCache) continue;
+    const data = await filmProviders(m);
+    const names = (data?.providers || []).map((p) => p.name);
+    coverageCache[key] = names.length ? withSvc.every((mem) => canStream(mem.services, names)) : false;
+    changed = true;
+  }
+  if (changed) scheduleRender();
 }
 
 // "Where to watch" + "Who can watch" — injected into the film-of-the-week card.

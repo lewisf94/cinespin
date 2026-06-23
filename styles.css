@@ -145,6 +145,9 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 #wheel-canvas { max-width: 92vw; height: auto; }
 .wheel-controls { text-align: center; }
 .wheel-status { margin-top: 12px; color: var(--muted); }
+.stream-filter { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; color: var(--muted); cursor: pointer; }
+.stream-filter input { width: 16px; height: 16px; cursor: pointer; }
+.filter-note { margin-top: 6px; }
 .turn-order { margin-top: 26px; text-align: center; }
 .turn-order .small { color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.7rem; }
 .turn-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 10px; }
@@ -425,7 +428,6 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 [data-theme="festival"] .tabs { border-top: 1px solid var(--line-strong); border-bottom: 3px double var(--line-strong); }
 [data-theme="festival"] .tab.active { border-bottom: 3px solid var(--accent); }
 [data-theme="festival"] #wheel-canvas { border: 3px double var(--line-strong); }
-[data-theme="festival"] .brand::after { content: "\00a0\00b7\00a0No.\00a0001"; font-family: Georgia, "Times New Roman", serif; font-size: 0.46em; letter-spacing: 0.12em; vertical-align: middle; color: var(--muted); text-transform: none; font-weight: 400; }
 
 /* ===========================================================================
    THEME 3 — WEB 1.0 (Strokes / Win95) : cobalt desktop, every card
@@ -574,5 +576,4 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
   .spin-stage { padding: 0 14px; }
   .modal-box { padding: 22px; }
   .theme-pop { max-height: 72vh; overflow-y: auto; }
-  [data-theme="festival"] .brand::after { display: none; }
 }
