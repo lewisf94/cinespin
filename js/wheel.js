@@ -36,6 +36,16 @@ function wheelStyle() {
       labelColor: "#ffffff", labelStroke: "#000000",
       emptyText: "#ffffff", emptyFill: "rgba(255,255,255,0.14)",
     },
+    // Dark: warm gold + muted colours on near-black, light outlined labels
+    noir: {
+      palette: ["#e7b85c", "#c2482e", "#3fa39b", "#7a6cc4", "#d98c3c", "#5a8f5a"],
+      segStroke: "#0e0f13", segStrokeW: 2, ring: "#3a3f4d", ringW: 2,
+      hubFill: "#16181f", hubStroke: "#e7b85c", hubR: 18,
+      pointerFill: "#e7b85c", pointerStroke: "#0e0f13", pointerW: 16,
+      labelFont: '700 14px "Archivo", system-ui, sans-serif', upper: false,
+      labelColor: "#ffffff", labelStroke: "#0e0f13",
+      emptyText: "#9aa0ab", emptyFill: "rgba(255,255,255,0.05)",
+    },
   };
   return styles[t] || styles.a24;
 }

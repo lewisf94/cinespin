@@ -559,6 +559,19 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 }
 [data-theme="strokes"] .start-menu button:hover { background: #000080; color: #ffffff; }
 
+/* ---- Dark theme: clean dark variant of the Default layout ---- */
+[data-theme="noir"] {
+  --bg: #0e0f13; --bg-soft: #16181f; --panel: #16181f; --panel-2: #1d2029;
+  --line: #2a2e39; --line-strong: #3a3f4d; --text: #e8e9ec; --muted: #9aa0ab;
+  --faint: #5f6675; --accent: #e7b85c; --accent-hi: #f0c873; --accent-ink: #14151a;
+  --danger: #ef6b62; --star-empty: #3a3f4d; --topbar-bg: rgba(14, 15, 19, 0.92);
+  --radius: 10px;
+}
+[data-theme="noir"] body { background: var(--bg); }
+[data-theme="noir"] .btn:hover { color: var(--accent); border-color: var(--accent); }
+[data-theme="noir"] .watch-logo, [data-theme="noir"] .rec-poster { background: var(--panel-2); }
+[data-theme="noir"] .spoiler { background: #c7ccd6; }
+
 /* ===========================================================================
    Mobile / responsive — sits last so it applies across every theme
    =========================================================================== */

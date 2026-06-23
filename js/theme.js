@@ -9,6 +9,7 @@ const THEMES = [
   { id: "a24",      name: "Default", bg: "#ffffff", accent: "#0a0a0a" },
   { id: "festival", name: "Cinema",  bg: "#ece2cd", accent: "#c2482e" },
   { id: "strokes",  name: "Web 1.0", bg: "#0a1aa8", accent: "#cc1f1f" },
+  { id: "noir",     name: "Dark",    bg: "#0e0f13", accent: "#e7b85c" },
 ];
 const KEY = "spinema_theme";
 const DEFAULT = "a24";

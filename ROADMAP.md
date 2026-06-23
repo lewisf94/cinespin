@@ -40,7 +40,7 @@ Working through these; **checked = shipped**. Pure front-end unless noted.
 
 ### Polish
 - [x] **Spoiler tags** in reviews (`||spoiler||`, click-to-reveal)
-- [ ] **Dark mode** option for themes
+- [x] **Dark mode** — added a fourth theme, `noir` (Dark)
 
 ---
 
