@@ -4,7 +4,7 @@
 
 import { isConfigured, db, doc, collection, onSnapshot } from "./firebase.js";
 import {
-  ensureAuth, getName, setName, getMemberId, getLastGroup, setLastGroup,
+  ensureAuth, getName, setName, getMemberId, getUid, getLastGroup, setLastGroup,
   isAccountSaved, getAccountEmail, sendAccountLink, isEmailSignInLink, completeEmailLinkSignIn,
 } from "./session.js";
 import {
@@ -421,6 +421,7 @@ function showLanding() {
 
 function attachGroup(code) {
   state.code = code;
+  ejecting = false;
   setLastGroup(code);
   const url = new URL(location.href);
   url.searchParams.set("g", code);
@@ -434,7 +435,10 @@ function attachGroup(code) {
   subscribe(code);
 }
 
-function leaveGroup() {
+// Tear down the club, drop the URL/last-group, and return to landing. `message`
+// (if any) is shown on the landing screen — used when we were kicked, not when
+// we left voluntarily.
+function ejectFromClub(message) {
   teardownSubs();
   setLastGroup(null);
   const url = new URL(location.href);
@@ -446,6 +450,29 @@ function leaveGroup() {
   state.ratings = [];
   state.comments = [];
   showLanding();
+  if (message) $("#landing-error").textContent = message;
+}
+
+function leaveGroup() {
+  ejectFromClub("");
+}
+
+// Has the admin removed us? A kick records our memberId in `bannedMemberIds`
+// (and our uid in `bannedUids`). We still receive group-doc snapshots (single-
+// doc get is open to any signed-in user), but our members/movies/ratings reads
+// are now denied — so eject cleanly instead of freezing on a half-loaded club.
+let ejecting = false;
+function checkKicked() {
+  const g = state.group;
+  if (!g || ejecting) return false;
+  const kicked = (g.bannedMemberIds || []).includes(getMemberId())
+    || (g.bannedUids || []).includes(getUid());
+  if (kicked) {
+    ejecting = true;
+    ejectFromClub("You've been removed from this club.");
+    return true;
+  }
+  return false;
 }
 
 async function handleCreate() {
@@ -479,35 +506,40 @@ function subscribe(code) {
   // once instead of up to four times. setTimeout(0) (not requestAnimationFrame)
   // so the auto-finalize/reset triggers in render() still fire in background
   // tabs, where rAF is paused.
+  // A kick removes us from memberUids, so the subcollection listeners start
+  // failing with permission-denied. Don't swallow it: confirm we were kicked
+  // and eject. (The group-doc listener keeps working — single-doc get is open —
+  // and is the usual trigger via checkKicked() in render; this is the backstop.)
+  const onDenied = (err) => { if (err?.code === "permission-denied") checkKicked(); };
   state.unsub.push(
     onSnapshot(doc(db, "groups", code), (snap) => {
       state.group = snap.exists() ? snap.data() : null;
       scheduleRender();
-    })
+    }, onDenied)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "members"), (snap) => {
       state.members = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    })
+    }, onDenied)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "movies"), (snap) => {
       state.movies = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    })
+    }, onDenied)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "ratings"), (snap) => {
       state.ratings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    })
+    }, onDenied)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "comments"), (snap) => {
       state.comments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    })
+    }, onDenied)
   );
 }
 function teardownSubs() {
@@ -626,6 +658,7 @@ function scheduleRender() {
 
 function render() {
   if (!state.code) return;
+  if (checkKicked()) return;
   $("#group-name").textContent = state.group?.name || "…";
   $("#group-code").textContent = state.code;
   $("#who-am-i").textContent = getName() || "Me";

@@ -153,7 +153,11 @@ segment. Sound is WebAudio; the win burst is canvas-confetti.
   (existing entries preserved, grows by ≤1), so a joiner can't scramble it, and
   a uid in the group's **`bannedUids`** (set by a kick) is refused — so a kicked
   member with a stable/saved uid can't rejoin via a raw API call (a *fresh
-  anonymous* uid still could; that needs server-side join).
+  anonymous* uid still could; that needs server-side join). A kicked member's
+  **live session** is ejected client-side too: they keep receiving group-doc
+  snapshots (single-doc `get` is open) but their subcollection reads now fail, so
+  `app.js` watches for its own memberId/uid in `bannedMemberIds`/`bannedUids` and
+  returns to the landing screen instead of freezing on a half-loaded club.
 - **Own rating/comment only.** A member may create/update only a rating or
   comment carrying their own `uid` **and** whose denormalised `memberId`
   resolves to a member record owned by that uid (`ownsMember`) — so you can't
