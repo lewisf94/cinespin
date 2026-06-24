@@ -202,6 +202,17 @@ a deploy step (the static front end itself stays no-build). When on, publish the
 writing those fields directly — the functions become the only path. Full
 walkthrough: `functions/README.md`.
 
+**Not yet covered (incompatibility).** The approval **vote** (`startVote` /
+`submitBallot` / `cancelVote` / `commitVoteWinner`), **vote-to-remove**
+(`voteRemoveMovie`) and the club **service override** (`setMovieServices`) were
+added after the functions and have **no callable** — they write Firestore
+directly and don't branch on `useFunctions`. Since the hardened rules forbid
+exactly those writes (group `vote`/`currentFilm` are function-only; movie updates
+are `if false`), enabling server-authoritative mode **silently breaks** those
+three features. They stay correct in the default client-trusted mode. Closing the
+gap means adding matching callables (and relaxing the hardened rules for the
+low-stakes poll/removeVotes/serviceOverride writes) — tracked in ROADMAP.
+
 ## Web Push reminders (optional)
 
 Deadline nudges over Firebase Cloud Messaging. **Off by default** — the

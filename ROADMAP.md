@@ -91,6 +91,14 @@ need **publishing** in the console). **[console]** = your action, no code.
 - [ ] **SH-7. TMDB v3 key is embedded in the client** — abusable against your key's quota;
   v3 keys can't be domain-locked. Standard for client TMDB apps; proxy via a Function only
   if it's ever abused. Low. (Plus P0 #6: optional HTTP-referrer restriction on the API key.)
+- [ ] **SH-9. Vote feature isn't server-authoritative (latent break).** `startVote`,
+  `submitBallot`, `cancelVote`, `commitVoteWinner`, `voteRemoveMovie` and `setMovieServices`
+  write Firestore directly and don't branch on `useFunctions` — but the hardened rules forbid
+  exactly those writes. So enabling server-authoritative mode **silently breaks voting,
+  vote-to-remove, and the where-to-watch override**. Fix: add callables for `commitVoteWinner`
+  (it sets `currentFilm` — must stay function-gated) and relax the hardened rules for the
+  low-stakes poll/`removeVotes`/`serviceOverride` writes. Documented in `functions/README.md`
+  + `ARCHITECTURE.md`; no impact in the default client-trusted mode.
 
 > **Publish step:** SH-2/4/6/8 are in the rules files but **don't auto-deploy**. Test in the
 > Firebase Emulator, then paste `firestore.rules` (or `functions/firestore.rules` in

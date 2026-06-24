@@ -68,6 +68,17 @@ Scheduled functions need the Blaze plan.
 > publish hardened rules (7). If you publish the hardened rules before the
 > functions/flag are live, spinning/finishing/resetting will fail until you do.
 
+> **Known gap — the vote feature is not server-authoritative yet.** The approval
+> **vote** (start vote / submit ballot / cancel / commit winner), the **vote-to-
+> remove** a wheel film, and the club **"where to watch" override** were added
+> after these functions and have **no callable** — they still write Firestore
+> directly and don't check `useFunctions`. The hardened rules forbid exactly
+> those writes (`vote`/`currentFilm` are function-only; movie updates are denied),
+> so turning this mode on **silently breaks voting, vote-to-remove, and the
+> service override**. Until functions are added for them (ROADMAP), either stay in
+> client-trusted mode if your club uses voting, or accept those features being
+> disabled under server-authoritative mode.
+
 ## Turn it off
 
 Set `useFunctions = false` in `js/firebase.js` (redeploy the site) and re-publish
