@@ -592,6 +592,13 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
    =========================================================================== */
 [data-mode="dark"] .spoiler { background: #c7ccd6; }
 [data-mode="dark"] .watch-logo, [data-mode="dark"] .rec-poster { background: var(--panel-2); }
+/* "Can / can't stream" colours need lighter shades on a dark panel for legible
+   contrast. The Web 1.0 windows stay light in dark mode, so they keep the deeper
+   originals. */
+[data-mode="dark"]:not([data-theme="strokes"]) .movie-avail.ok,
+[data-mode="dark"]:not([data-theme="strokes"]) .tmdb-item-avail.ok { color: #5fc98a; }
+[data-mode="dark"]:not([data-theme="strokes"]) .movie-avail.warn,
+[data-mode="dark"]:not([data-theme="strokes"]) .tmdb-item-avail.warn { color: #e0b75f; }
 
 /* Default — monochrome, inverted */
 [data-theme="a24"][data-mode="dark"] {

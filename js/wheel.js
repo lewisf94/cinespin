@@ -282,12 +282,22 @@ export function chooseWinnerIndex(n) {
 }
 
 // ---- the spin animation overlay -------------------------------------------
+// Respect the OS "reduce motion" setting: motion-sensitive users get the result
+// without the long spin or the confetti burst. (CSS already neutralises the
+// overlay's fade/pop animations under the same query — this covers the parts
+// driven by JS: the canvas rotation, confetti and vibration.)
+const prefersReducedMotion = () => {
+  try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  catch (_) { return false; }
+};
+
 function playSpinOverlay(spin, onDone) {
   const segments = spin.segments || [];
   const n = segments.length;
   if (n === 0) { onDone?.(); return; }
   const winnerIndex = Math.min(Math.max(spin.winnerIndex || 0, 0), n - 1);
   const duration = spin.durationMs || 6000;
+  const reduce = prefersReducedMotion();
 
   const overlay = document.createElement("div");
   overlay.className = "spin-overlay";
@@ -340,15 +350,27 @@ function playSpinOverlay(spin, onDone) {
   }
 
   function finish() {
-    ding();
-    navigator.vibrate?.([20, 40, 90]);
+    ding(); // audio is gated by mute, not by reduced-motion
     caption.textContent = segments[winnerIndex].title || "";
     caption.classList.add("win");
-    burstConfetti();
+    if (!reduce) {
+      navigator.vibrate?.([20, 40, 90]);
+      burstConfetti();
+    }
     setTimeout(() => {
       overlay.classList.add("closing");
-      setTimeout(() => { overlay.remove(); onDone?.(); }, 600);
-    }, 1700);
+      setTimeout(() => { overlay.remove(); onDone?.(); }, reduce ? 200 : 600);
+    }, reduce ? 1100 : 1700);
+  }
+
+  // Reduced motion: skip the spin entirely — draw the landed wheel and announce
+  // the winner straight away, no rotation.
+  if (reduce) {
+    overlay.querySelector(".spin-pointer-label").textContent = "the wheel picked";
+    drawWheel(ctx, size, segments, target, winnerIndex);
+    drawPointer(ctx, size);
+    finish();
+    return;
   }
 
   requestAnimationFrame(frame);

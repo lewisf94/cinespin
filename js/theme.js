@@ -22,10 +22,18 @@ function saved() {
   } catch (_) { return DEFAULT; }
 }
 function remember(id) { try { localStorage.setItem(KEY, id); } catch (_) {} }
+// Follow the OS colour-scheme on first visit (no explicit choice saved yet), so a
+// dark-mode device isn't hit with a full-white screen. Once the user toggles, that
+// choice is remembered and wins from then on.
+function prefersDark() {
+  try { return window.matchMedia("(prefers-color-scheme: dark)").matches; }
+  catch (_) { return false; }
+}
 function savedMode() {
   try {
     const m = localStorage.getItem(MODE_KEY);
-    return m === "dark" ? "dark" : "light";
+    if (m === "dark" || m === "light") return m;
+    return prefersDark() ? "dark" : "light";
   } catch (_) { return "light"; }
 }
 function rememberMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch (_) {} }
