@@ -70,6 +70,9 @@ const FALLBACK_MS = 4000;
 // When the club opts to cap the wheel, show at most this many films (the oldest
 // on the wheel) so a big list stays readable. Toggleable per club; see renderWheelTab.
 const WHEEL_CAP = 20;
+// Optional: a Ko-fi / Buy-Me-a-Coffee / GitHub Sponsors URL. Set it and a small,
+// unobtrusive "Support the project" link appears on the landing page. Blank = off.
+const SUPPORT_URL = "";
 
 // ---- boot ------------------------------------------------------------------
 async function init() {
@@ -450,6 +453,16 @@ function showLanding() {
   show($("#screen-landing"));
   $("#landing-error").textContent = "";
   $("#who-am-i").textContent = getName() || "Me";
+  renderSupportLink();
+}
+
+// Optional "Support the project" link on the landing page (only when SUPPORT_URL
+// is set). Kept off the in-app screens so it never nags people mid-use.
+function renderSupportLink() {
+  const el = $("#support-line");
+  if (!el || !SUPPORT_URL) return;
+  el.innerHTML = `Enjoying CineSpin? <a href="${esc(SUPPORT_URL)}" target="_blank" rel="noopener">Support the project</a>.`;
+  show(el);
 }
 
 function attachGroup(code) {
