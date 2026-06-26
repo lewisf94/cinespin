@@ -29,7 +29,17 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .error { color: var(--danger); min-height: 1.2em; }
 /* Backend-trouble banner (over free quota / unreachable / App Check block). */
 .conn-banner { margin-bottom: 18px; padding: 14px 18px; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; font-size: 0.95rem; line-height: 1.5; }
-.support-line { margin-top: 30px; }
+/* Landing footer (support link + legal links) */
+.site-footer { margin-top: 32px; }
+.site-footer p { margin: 6px 0; }
+/* Privacy / Terms pages */
+.legal { max-width: 760px; margin: 0 auto 20px; }
+.legal h1 { margin-top: 0; }
+.legal h2 { margin-top: 24px; font-size: 1.15rem; }
+.legal p, .legal li { line-height: 1.6; }
+.legal ul { padding-left: 20px; }
+.legal li { margin: 5px 0; }
+.legal-nav { margin-top: 18px; }
 
 /* ---- topbar ---- */
 .topbar {
