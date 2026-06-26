@@ -1,6 +1,6 @@
-# CineSpin Cloud Functions (optional, server-authoritative mode)
+# CineClub Cloud Functions (optional, server-authoritative mode)
 
-By default CineSpin runs **without** these — the static site talks straight to
+By default CineClub runs **without** these — the static site talks straight to
 Firestore and the round/turn/reset invariants are trusted to the client (fine
 for a friendly club). Deploying these makes those invariants **server-enforced**
 instead: the turn passes only when everyone has watched and rated, a reset

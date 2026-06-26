@@ -1,10 +1,10 @@
-// CineSpin service worker — installable PWA + offline app shell.
+// CineClub service worker — installable PWA + offline app shell.
 // --------------------------------------------------------------------------
 // Only same-origin GETs are touched here; Firebase / gstatic / TMDB requests
 // pass straight through to the network (never cached or intercepted), so the
 // realtime sync is unaffected. Bump CACHE to force clients off old assets.
 // --------------------------------------------------------------------------
-const CACHE = "cinespin-v1";
+const CACHE = "cineclub-v1";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.webmanifest",
   "./js/app.js", "./js/firebase.js", "./js/session.js", "./js/groups.js",

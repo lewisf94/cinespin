@@ -1,6 +1,6 @@
 {
-  "name": "cinespin-functions",
-  "description": "Server-authoritative round/turn/reset invariants for CineSpin",
+  "name": "cineclub-functions",
+  "description": "Server-authoritative round/turn/reset invariants for CineClub",
   "private": true,
   "engines": {
     "node": "20"

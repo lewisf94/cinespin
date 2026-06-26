@@ -1,5 +1,5 @@
 // ============================================================================
-//  CineSpin Cloud Functions — server-authoritative round / turn / reset rules
+//  CineClub Cloud Functions — server-authoritative round / turn / reset rules
 // ----------------------------------------------------------------------------
 //  These callable functions own every write that affects SHARED club state, so
 //  the invariants are enforced by the server (Admin SDK, which bypasses the
@@ -304,7 +304,7 @@ exports.sendDeadlineReminders = onSchedule("every day 09:00", async () => {
       const res = await getMessaging().sendEachForMulticast({
         tokens,
         data: {
-          title: "CineSpin — watch-by reminder",
+          title: "CineClub — watch-by reminder",
           body,
           url: "./?g=" + groupDoc.id,
           tag: "deadline-" + cf.movieId,

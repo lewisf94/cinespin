@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// CineSpin HARDENED rules — for SERVER-AUTHORITATIVE mode only.
+// CineClub HARDENED rules — for SERVER-AUTHORITATIVE mode only.
 // --------------------------------------------------------------------------
 // Publish these *instead of* the root firestore.rules ONLY after you have:
 //   1. deployed the Cloud Functions in functions/ (firebase deploy --only

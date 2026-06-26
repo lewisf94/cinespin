@@ -3,7 +3,7 @@
 //  The look is a CSS [data-theme="…"] block (+ a wheel style in wheel.js); the
 //  light/dark mode is a separate [data-mode] attribute, toggled independently.
 //  Both are remembered in localStorage; changing either fires
-//  "cinespin:themechange" so the app redraws the wheel.
+//  "cineclub:themechange" so the app redraws the wheel.
 // ============================================================================
 
 const THEMES = [
@@ -11,8 +11,8 @@ const THEMES = [
   { id: "festival", name: "Cinema",  bg: "#ece2cd", darkBg: "#241d15", accent: "#c2482e" },
   { id: "strokes",  name: "Web 1.0", bg: "#0a1aa8", darkBg: "#05083a", accent: "#cc1f1f" },
 ];
-const KEY = "cinespin_theme";
-const MODE_KEY = "cinespin_mode";
+const KEY = "cineclub_theme";
+const MODE_KEY = "cineclub_mode";
 const DEFAULT = "a24";
 
 function saved() {
@@ -53,13 +53,13 @@ function apply(id) {
   if (!THEMES.some((t) => t.id === id)) id = DEFAULT;
   root.setAttribute("data-theme", id);
   paintMeta();
-  window.dispatchEvent(new CustomEvent("cinespin:themechange", { detail: id }));
+  window.dispatchEvent(new CustomEvent("cineclub:themechange", { detail: id }));
 }
 function applyMode(m) {
   root.setAttribute("data-mode", m === "dark" ? "dark" : "light");
   paintMeta();
   updateModeBtn();
-  window.dispatchEvent(new CustomEvent("cinespin:themechange", { detail: curTheme() }));
+  window.dispatchEvent(new CustomEvent("cineclub:themechange", { detail: curTheme() }));
 }
 
 function updateModeBtn() {

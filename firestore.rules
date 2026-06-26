@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// CineSpin security rules — member-locked clubs.
+// CineClub security rules — member-locked clubs.
 // --------------------------------------------------------------------------
 // Every browser signs in anonymously, so all access requires auth. Beyond
 // that, a club is private to the Firebase uids in its `memberUids` list:

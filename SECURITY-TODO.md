@@ -1,4 +1,4 @@
-# CineSpin — security to-do
+# CineClub — security to-do
 
 _A working checklist from the 2026-06-26 security deep-dive. Tick items as we go.
 Complements the `SH-*` items in [ROADMAP.md](./ROADMAP.md) — this is the
@@ -100,7 +100,7 @@ items only the project owner can do._
   low-stakes writes) then. (ROADMAP SH-9.)
 
 - [ ] **12. [console/you] INFO — (not security) email sender still says `cinewheel-79636`.**
-  Project Settings → General → set **Public-facing name** to **CineSpin**. Carried over from
+  Project Settings → General → set **Public-facing name** to **CineClub**. Carried over from
   HANDOFF "Needs YOU"; listed here so it isn't lost.
 
 ---

@@ -1,4 +1,4 @@
-# CineSpin
+# CineClub
 
 **Live app → <https://lewisf94.github.io/cinespin/>**
 
@@ -39,25 +39,25 @@ club is in, with stats along the way.
 
 ## One-time setup (~5–10 minutes)
 
-CineSpin is a static site, so it needs a free **Firebase** project to store the
+CineClub is a static site, so it needs a free **Firebase** project to store the
 shared data. You only do this once.
 
 ### 1. Create a Firebase project
 1. Go to **<https://console.firebase.google.com>** and sign in with a Google account.
-2. Click **Add project**, give it any name (e.g. `cinespin`), and continue.
+2. Click **Add project**, give it any name (e.g. `cineclub`), and continue.
    You can disable Google Analytics when asked.
 
 ### 2. Register a Web App and copy the config
 1. On the project home, click the **Web icon `</>`** ("Add app").
-2. Give it a nickname (e.g. `cinespin-web`) and click **Register app**.
+2. Give it a nickname (e.g. `cineclub-web`) and click **Register app**.
    (You do **not** need Firebase Hosting.)
 3. You'll see a `firebaseConfig` object like this — keep this tab open:
    ```js
    const firebaseConfig = {
      apiKey: "AIza…",
-     authDomain: "cinespin-xxxx.firebaseapp.com",
-     projectId: "cinespin-xxxx",
-     storageBucket: "cinespin-xxxx.appspot.com",
+     authDomain: "cineclub-xxxx.firebaseapp.com",
+     projectId: "cineclub-xxxx",
+     storageBucket: "cineclub-xxxx.appspot.com",
      messagingSenderId: "1234567890",
      appId: "1:1234567890:web:abcdef…",
    };
@@ -112,8 +112,8 @@ of [`firestore.rules`](./firestore.rules) and `ARCHITECTURE.md`.
    - **Brand the email:** the sign-in message takes the app name from your
      project's **public-facing name** (defaults to the project id, e.g.
      `cinewheel-79636`). Set it under **Project Settings → General →
-     Public-facing name** (e.g. `CineSpin`) so the email reads "Sign in to
-     CineSpin…" instead of the raw id. The sender *address* still shows the
+     Public-facing name** (e.g. `CineClub`) so the email reads "Sign in to
+     CineClub…" instead of the raw id. The sender *address* still shows the
      project id unless you use custom SMTP (above).
    - **If you restrict the Web API key by HTTP referrer** (the optional hardening
      in step 9 / ROADMAP #6) you **must also allow the auth handler's domain**, or
@@ -189,7 +189,7 @@ test the spin together.
 
 ## Install it (PWA)
 
-CineSpin ships a web manifest + service worker, so phones and desktops can
+CineClub ships a web manifest + service worker, so phones and desktops can
 **install it to the home screen** (browser menu → *Install* / *Add to Home
 Screen*) and it launches full-screen with an app icon. The shell is cached for
 instant loads; live data still needs a connection (it's a realtime app). To
@@ -220,7 +220,7 @@ Built in, and **enabled on the live site** (a key is set in `js/tmdb.js`); it's
   browser locale, falling back to your timezone) and can be overridden on the
   **Films** tab if it guesses wrong.
 - **"Who can watch"** — each member picks the streaming services they subscribe
-  to (on the **Films** tab); CineSpin cross-references them with where each film
+  to (on the **Films** tab); CineClub cross-references them with where each film
   is streaming and shows who's covered, with a per-film badge on the wheel so you
   can favour films **everyone** can watch.
 

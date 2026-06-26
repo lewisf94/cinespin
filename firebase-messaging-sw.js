@@ -1,4 +1,4 @@
-/* CineSpin — Firebase Cloud Messaging background service worker.
+/* CineClub — Firebase Cloud Messaging background service worker.
  * --------------------------------------------------------------------------
  * Handles push notifications when no tab is focused (the page itself handles
  * them while open, via onForegroundMessage in firebase.js). This file is only
@@ -30,12 +30,12 @@ const messaging = firebase.messaging();
 // we control the icon and the click-through URL.
 messaging.onBackgroundMessage((payload) => {
   const d = payload.data || {};
-  const title = d.title || "CineSpin";
+  const title = d.title || "CineClub";
   const options = {
     body: d.body || "",
     icon: "./assets/icon-192.png",
     badge: "./assets/icon-192.png",
-    tag: d.tag || "cinespin",
+    tag: d.tag || "cineclub",
     data: { url: d.url || "./" },
   };
   self.registration.showNotification(title, options);

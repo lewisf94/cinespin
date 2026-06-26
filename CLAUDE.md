@@ -1,6 +1,6 @@
-# CineSpin — project guide
+# CineClub — project guide
 
-CineSpin is a **film-club** web app: a group adds films to a wheel, takes turns
+CineClub is a **film-club** web app: a group adds films to a wheel, takes turns
 spinning to pick the week's film, sets a watch-by deadline, then everyone marks
 it watched and leaves a (sealed) half-star rating + review. Reviews unseal and
 the turn passes only once **every** member has watched **and** rated.
@@ -41,7 +41,7 @@ console: Firestore created, the rules from `firestore.rules` published, and
 | `js/wheel.js` | Canvas wheel (theme-aware), spin animation, WebAudio sound, confetti |
 | `js/stats.js` | Client-side stats from movies + ratings + members |
 | `js/tmdb.js` | **Optional** TMDB film metadata (autocomplete, posters, year/runtime/genres) — off until a key is set |
-| `js/theme.js` | Theme switcher (localStorage; fires `cinespin:themechange`) |
+| `js/theme.js` | Theme switcher (localStorage; fires `cineclub:themechange`) |
 | `js/app.js` | Orchestration: routing, live Firestore subscriptions, rendering, actions |
 | `firestore.rules` | Member-locked security rules (each club private to its `memberUids`) |
 | `functions/` | **Optional** Cloud Functions backend for server-authoritative invariants — off by default (`useFunctions` in `firebase.js`). See `functions/README.md`. |
@@ -57,10 +57,10 @@ console: Firestore created, the rules from `firestore.rules` published, and
 - **No emojis** in the UI (deliberate). The `*` star glyph in ratings is fine.
 - **Vanilla DOM.** Rendering is `innerHTML` templates + `addEventListener` in
   `app.js`. Escape user input with the local `esc()` helper before interpolating.
-- **Themes are per-user** (localStorage `cinespin_theme`), never in Firestore.
+- **Themes are per-user** (localStorage `cineclub_theme`), never in Firestore.
   Three: `a24` (Default), `festival` (Cinema), `strokes` (Web 1.0) — each with a
   **light/dark mode** via a separate `[data-mode]` toggle (localStorage
-  `cinespin_mode`). A theme is a CSS `[data-theme="…"]` block (+ optional
+  `cineclub_mode`). A theme is a CSS `[data-theme="…"]` block (+ optional
   `[data-theme][data-mode="dark"]` overrides) **plus** a matching branch in
   `wheelStyle()` in `wheel.js` (with a dark patch when needed).
 

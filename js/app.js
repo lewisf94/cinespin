@@ -1,5 +1,5 @@
 // ============================================================================
-//  CineSpin — app orchestration: routing, live data, rendering, actions
+//  CineClub — app orchestration: routing, live data, rendering, actions
 // ============================================================================
 
 import { isConfigured, db, doc, collection, onSnapshot } from "./firebase.js";
@@ -73,7 +73,7 @@ const WHEEL_CAP = 20;
 
 // ---- boot ------------------------------------------------------------------
 async function init() {
-  setMuted(localStorage.getItem("cinespin_muted") === "1");
+  setMuted(localStorage.getItem("cineclub_muted") === "1");
   updateMuteBtn();
   wireStaticUI();
 
@@ -87,7 +87,7 @@ async function init() {
     // We're past the isConfigured check, so this is a runtime failure (network /
     // App Check), not a setup one — show the friendly banner over the landing.
     showLanding();
-    showConnError(friendlyConnMessage(e) || "Couldn't connect to CineSpin — please try reloading.");
+    showConnError(friendlyConnMessage(e) || "Couldn't connect to CineClub — please try reloading.");
     return;
   }
 
@@ -126,7 +126,7 @@ async function init() {
 function wireStaticUI() {
   $("#mute-btn").addEventListener("click", () => {
     setMuted(!isMuted());
-    localStorage.setItem("cinespin_muted", isMuted() ? "1" : "0");
+    localStorage.setItem("cineclub_muted", isMuted() ? "1" : "0");
     updateMuteBtn();
   });
   $("#who-am-i").addEventListener("click", () => promptName());
@@ -230,7 +230,7 @@ function wireStaticUI() {
   if (g) $("#join-code").value = normaliseCode(g);
 
   // redraw (the wheel especially) when the theme changes
-  window.addEventListener("cinespin:themechange", () => { try { render(); } catch (_) {} });
+  window.addEventListener("cineclub:themechange", () => { try { render(); } catch (_) {} });
 
   // Web 1.0 window chrome: the title-bar [X] lives on the dialogs only, where it
   // is functional - it closes the name window and declines the reset window.
@@ -267,7 +267,7 @@ function wireStaticUI() {
     menu.innerHTML = `
       <button data-act="theme">Change theme</button>
       <button data-act="leave">Leave club</button>
-      <button data-act="about">About CineSpin</button>`;
+      <button data-act="about">About CineClub</button>`;
     document.body.appendChild(menu);
     startBtn.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("hidden"); });
     document.addEventListener("click", (e) => { if (e.target !== startBtn && !menu.contains(e.target)) menu.classList.add("hidden"); });
@@ -277,7 +277,7 @@ function wireStaticUI() {
       menu.classList.add("hidden");
       if (act === "theme") $("#theme-btn").click();
       else if (act === "leave") { if (state.code) leaveGroup(); }
-      else if (act === "about") alert("CineSpin - a film-club wheel. Spin for the week's film, watch it, then rate. Built as a static site on Firebase.");
+      else if (act === "about") alert("CineClub - a film-club wheel. Spin for the week's film, watch it, then rate. Built as a static site on Firebase.");
     });
   }
 }
@@ -540,9 +540,9 @@ async function handleJoin(raw) {
 function friendlyConnMessage(err) {
   const code = (err && err.code) || "";
   if (code === "resource-exhausted")
-    return "CineSpin's hit its free daily limit — it'll be back tomorrow. Thanks for the interest!";
+    return "CineClub's hit its free daily limit — it'll be back tomorrow. Thanks for the interest!";
   if (code === "unavailable" || code === "deadline-exceeded" || code === "internal" || code === "aborted")
-    return "Can't reach CineSpin right now — check your connection and try again in a moment.";
+    return "Can't reach CineClub right now — check your connection and try again in a moment.";
   if (code === "unauthenticated" || code === "permission-denied" || code.indexOf("app-check") !== -1)
     return "Couldn't verify this browser. If you're on a strict ad/privacy blocker, a VPN, or private mode, try turning those off or use a different browser.";
   return "";
@@ -1146,7 +1146,7 @@ function renderMoviesTab() {
   const servicesCard = tmdbEnabled ? `
     <div class="card">
       <h3>My streaming services</h3>
-      <p class="muted small">Pick what you subscribe to — CineSpin uses it to show who can actually watch each film.</p>
+      <p class="muted small">Pick what you subscribe to — CineClub uses it to show who can actually watch each film.</p>
       <div class="svc-grid">${STREAMING_SERVICES
         .map((s) => `<button type="button" class="svc-chip${mySvcs.includes(s.id) ? " on" : ""}" data-svc="${s.id}" aria-pressed="${mySvcs.includes(s.id)}">${esc(s.name)}</button>`)
         .join("")}</div>
@@ -1538,7 +1538,7 @@ function closeMovieModal() {
   hide($("#movie-modal"));
 }
 
-// ---- season recap ("CineSpin Wrapped") --------------------------------------
+// ---- season recap ("CineClub Wrapped") --------------------------------------
 function appendRecapButton(pane) {
   if (!state.movies.some((m) => m.status === "watched")) return; // nothing yet
   const div = document.createElement("div");
@@ -1579,7 +1579,7 @@ function recapHtml() {
   }).filter(Boolean);
 
   return `
-    <h2 id="recap-modal-title">CineSpin recap</h2>
+    <h2 id="recap-modal-title">CineClub recap</h2>
     <p class="recap-big">${watched.length} film${watched.length === 1 ? "" : "s"}${totalMins ? ` &middot; ${fmtRuntime(totalMins)} watched` : ""}</p>
     ${topGenre ? `<p class="muted">Most-watched genre: <b>${esc(topGenre[0])}</b></p>` : ""}
     ${board[0] ? `<p><b>Top rated:</b> ${esc(board[0].title)} <span class="muted">(${fmt2(board[0].a)}★)</span></p>` : ""}
@@ -1842,14 +1842,14 @@ function icsEsc(s) { return String(s).replace(/([,;\\])/g, "\\$1").replace(/\n/g
 function icsStamp(ms) { return new Date(ms).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"; }
 function buildIcs(title, deadlineMs) {
   return [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//CineSpin//EN", "CALSCALE:GREGORIAN",
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//CineClub//EN", "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    "UID:cinespin-" + deadlineMs + "@" + (state.code || "club"),
+    "UID:cineclub-" + deadlineMs + "@" + (state.code || "club"),
     "DTSTAMP:" + icsStamp(Date.now()),
     "DTSTART:" + icsStamp(deadlineMs - 60 * 60 * 1000),
     "DTEND:" + icsStamp(deadlineMs),
     "SUMMARY:" + icsEsc("Watch: " + title),
-    "DESCRIPTION:" + icsEsc("CineSpin film-club pick — watch and rate before the deadline."),
+    "DESCRIPTION:" + icsEsc("CineClub film-club pick — watch and rate before the deadline."),
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");
 }
@@ -1871,7 +1871,7 @@ function addToCalendar(title, deadlineMs) {
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = "cinespin-" + (title || "film").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".ics";
+  a.download = "cineclub-" + (title || "film").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".ics";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -1880,7 +1880,7 @@ function gcalUrl(title, deadlineMs) {
     action: "TEMPLATE",
     text: "Watch: " + title,
     dates: icsStamp(deadlineMs - 60 * 60 * 1000) + "/" + icsStamp(deadlineMs),
-    details: "CineSpin film-club pick — watch and rate before the deadline.",
+    details: "CineClub film-club pick — watch and rate before the deadline.",
   });
   return "https://calendar.google.com/calendar/render?" + p.toString();
 }

@@ -1,10 +1,10 @@
-# CineSpin — status & handoff
+# CineClub — status & handoff
 
 _A snapshot for picking up in a fresh chat/session. The living backlog is in
 [ROADMAP.md](./ROADMAP.md); the technical reference is in
 [ARCHITECTURE.md](./ARCHITECTURE.md); end-user setup is in [README.md](./README.md)._
 
-**Last updated:** 2026-06-25.
+**Last updated:** 2026-06-26.
 
 ## Naming — three different names, all on purpose
 
@@ -12,10 +12,10 @@ This trips people up, so read it first:
 
 | Thing | Name | Notes |
 |-------|------|-------|
-| **Brand** (what users see) | **CineSpin** | Was "Spinema", before that "cinewheel". Reads cleanly (Cine·Spin). |
-| **GitHub repo** | **`cinespin`** | Renamed from `spinema` (2026-06-25). Live URL → `https://lewisf94.github.io/cinespin/`. |
+| **Brand** (what users see) | **CineClub** | Was "CineSpin" (clashed with an existing app + domain), before that "Spinema" / "cinewheel". Reads as Cine·Club. |
+| **GitHub repo** | **`cinespin`** | **Not renamed** when the brand became CineClub — repo name ≠ brand is fine. A custom domain (`thecineclub.co.uk`) will front it; the GitHub Pages URL stays `https://lewisf94.github.io/cinespin/`. |
 | **Firebase project** | **`cinewheel-79636`** | **Do NOT rename** — internal id, never shown to users; renaming breaks the config. |
-| **localStorage keys** | `cinespin_*` | The old `spinema_*` / `cinewheel_*` keys are gone — no migration (the app was test-only before the rename). |
+| **localStorage keys** | `cineclub_*` | Renamed from `cinespin_*` with the CineClub rebrand — no migration (test-only, as with prior renames); existing browsers just re-enter their name once. |
 
 The app uses **relative paths** everywhere (no hardcoded domain/path), so the
 Pages URL changing from `/spinema/` to `/cinespin/` does not break anything.
@@ -36,7 +36,7 @@ Pages URL changing from `/spinema/` to `/cinespin/` does not break anything.
 ## On now (live / enabled)
 
 - **TMDB** metadata — title autocomplete, posters, year/runtime/genres, "where to watch", richer stats. Key in `js/tmdb.js`.
-- **Features:** approval **vote mode** + **vote-a-film-off**, **Letterboxd CSV import**, per-film **discussion comments** (revealed with reviews), **activity feed**, **taste compatibility**, **add-to-calendar (.ics)**, **trailers + recommendations**, **season recap** ("CineSpin Wrapped"), **per-film rating histogram**, **spoiler tags**, **dark mode**, themed **stream-filter** pill.
+- **Features:** approval **vote mode** + **vote-a-film-off**, **Letterboxd CSV import**, per-film **discussion comments** (revealed with reviews), **activity feed**, **taste compatibility**, **add-to-calendar (.ics)**, **trailers + recommendations**, **season recap** ("CineClub Wrapped"), **per-film rating histogram**, **spoiler tags**, **dark mode**, themed **stream-filter** pill.
 - **PWA** (installable + offline shell), accessibility pass, single-writer finalize/reset, serverTimestamp ordering, render coalescing — all live.
 - **Security (client/code side):** uid-recorded identity, **kicked-member live ejection** (a kicked member is cleanly returned to the landing screen). Member-locked rules + hardening are written (see "Needs YOU").
 
@@ -50,7 +50,7 @@ Pages URL changing from `/spinema/` to `/cinespin/` does not break anything.
 ## Needs YOU (console actions — I can't reach the Firebase project)
 
 1. **CRITICAL — publish the rules.** Paste `firestore.rules` into Firebase → Firestore → Rules → Publish. The live DB still runs the **old permissive rules** until you do, so the member-lock + hardening (SH-2/4/6/8, incl. rating/comment author-pinning) aren't enforced yet. **Emulator-test first** (SH-8 adds `get()`-based checks). The uid-recording client is live, so have everyone **re-join once** after publishing.
-2. **Email template still says "cinewheel-79636".** Fix: Firebase → Project Settings → General → **Public-facing name** → set to **CineSpin** → Save. (The sign-in-link email isn't a directly-editable template; it uses this name. Sender address stays `@cinewheel-79636.firebaseapp.com` unless you set up custom SMTP.)
+2. **Email template still says "cinewheel-79636".** Fix: Firebase → Project Settings → General → **Public-facing name** → set to **CineClub** → Save. (The sign-in-link email isn't a directly-editable template; it uses this name. Sender address stays `@cinewheel-79636.firebaseapp.com` unless you set up custom SMTP.)
 3. **Optional hardening:** App Check (SH-1), anonymous-account auto-cleanup (SH-5), API-key referrer restriction. README + ROADMAP have the steps.
 4. **Email-link sign-in** is already enabled and confirmed working (Email/Password + Email link, `lewisf94.github.io` in Authorized domains, auth-handler domain in the API-key referrer list).
 
@@ -59,7 +59,7 @@ Pages URL changing from `/spinema/` to `/cinespin/` does not break anything.
 - **SH-9** — make the vote feature server-authoritative (add `commitVoteWinner` etc. callables; relax hardened rules for the low-stakes poll/removeVotes/serviceOverride writes).
 - **SH-3** sybil/metadata gap — needs a server-side join (a fresh anonymous uid can still join/rate; longer codes or App Check mitigate).
 - **Deferred:** read-cost refactor (archive split — wants emulator testing); it's fine for small clubs as-is.
-- **Optional polish:** new app icon/favicon if you want a "CS"/CineSpin mark (current icon is a film-reel).
+- **Optional polish:** new app icon/favicon if you want a "CC"/CineClub mark (current icon is a film-reel).
 
 ## Conventions to keep (don't regress)
 

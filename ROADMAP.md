@@ -1,4 +1,4 @@
-# CineSpin — improvement roadmap
+# CineClub — improvement roadmap
 
 Backlog from the architecture / security / performance review (deep research, 2026-06).
 **Target context:** PUBLIC app that could scale; **each club must be locked to its own
@@ -40,7 +40,7 @@ Working through these; **checked = shipped**. Pure front-end unless noted.
 - [x] **TMDB recommendations** — "if you liked last week's pick…" on the Films tab
 
 ### Stats / wrap-up
-- [x] **Season recap ("CineSpin Wrapped")** — end-of-cycle summary popup
+- [x] **Season recap ("CineClub Wrapped")** — end-of-cycle summary popup
 - [x] **Per-film rating breakdown** — half-star histogram on each watched card
 
 ### Polish

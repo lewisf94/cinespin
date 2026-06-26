@@ -18,10 +18,10 @@ import {
   linkWithCredential,
 } from "./firebase.js";
 
-const MEMBER_ID_KEY = "cinespin_member_id";
-const NAME_KEY = "cinespin_name";
-const LAST_GROUP_KEY = "cinespin_last_group";
-const EMAIL_KEY = "cinespin_email_for_signin";
+const MEMBER_ID_KEY = "cineclub_member_id";
+const NAME_KEY = "cineclub_name";
+const LAST_GROUP_KEY = "cineclub_last_group";
+const EMAIL_KEY = "cineclub_email_for_signin";
 
 // The Firebase anonymous auth uid — the identity the security rules trust.
 // Available once ensureAuth() has resolved (init() awaits it before any writes).

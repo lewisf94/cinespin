@@ -150,7 +150,7 @@ const TZ_REGION = {
   "Africa/Johannesburg": "ZA",
 };
 
-const REGION_KEY = "cinespin_region";
+const REGION_KEY = "cineclub_region";
 
 // Best-guess streaming region: a manual override wins; otherwise the first
 // browser language that carries a country (en-GB -> GB), then the timezone's

@@ -1,5 +1,5 @@
 // ============================================================================
-//  Firebase initialisation for CineSpin
+//  Firebase initialisation for CineClub
 // ----------------------------------------------------------------------------
 //  This is the ONLY file you need to edit to connect your own Firebase project.
 //  Follow README.md (steps 1–6) to get these values, then paste them below.

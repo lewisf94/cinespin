@@ -6,12 +6,12 @@
   <!-- Don't leak the ?g=CODE club code in the Referer header to TMDB/CDNs (also the modern default). -->
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="theme-color" content="#ffffff" />
-  <title>CineSpin — Film Club</title>
+  <title>CineClub — Film Club</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2314151A'/%3E%3Ccircle cx='32' cy='32' r='26.8' fill='%23969CA4'/%3E%3Ccircle cx='32' cy='32' r='24.5' fill='%23C5C9CF'/%3E%3Ccircle cx='32' cy='32' r='21.4' fill='none' stroke='%2314151A' stroke-width='1.7'/%3E%3Ccircle cx='32' cy='18' r='6' fill='%2314151A'/%3E%3Ccircle cx='45.31' cy='27.68' r='6' fill='%2314151A'/%3E%3Ccircle cx='40.23' cy='43.33' r='6' fill='%2314151A'/%3E%3Ccircle cx='23.77' cy='43.33' r='6' fill='%2314151A'/%3E%3Ccircle cx='18.69' cy='27.68' r='6' fill='%2314151A'/%3E%3Ccircle cx='32' cy='32' r='5.2' fill='%2314151A'/%3E%3Ccircle cx='32' cy='32' r='2' fill='%23C5C9CF'/%3E%3C/svg%3E" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-180.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="CineSpin" />
+  <meta name="apple-mobile-web-app-title" content="CineClub" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&family=Pixelify+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -21,7 +21,7 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">CineSpin</div>
+    <div class="brand">CineClub</div>
     <div class="topbar-group hidden" id="group-meta">
       <span id="group-name" class="group-name"></span>
       <button id="copy-code" class="chip code-chip" title="Copy share code"><span id="group-code"></span> <span class="copy-label" id="copy-icon">Copy</span></button>
@@ -46,7 +46,7 @@
       <div class="card">
         <div class="film-banner">Setup</div>
         <h1>One quick setup step</h1>
-        <p>CineSpin needs a free Firebase project to store your club's data. It
+        <p>CineClub needs a free Firebase project to store your club's data. It
            takes about five to ten minutes, once.</p>
         <ol class="setup-list">
           <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> and create a project.</li>
@@ -85,7 +85,7 @@
       </div>
       <p id="landing-error" class="error center"></p>
       <footer class="site-footer center small muted">
-        <p><a href="support/">Support CineSpin</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+        <p><a href="support/">Support CineClub</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
       </footer>
     </section>
 
@@ -136,7 +136,7 @@
     </div>
   </div>
 
-  <!-- Season recap ("CineSpin Wrapped") -->
+  <!-- Season recap ("CineClub Wrapped") -->
   <div id="recap-modal" class="modal hidden">
     <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="recap-modal-title">
       <div id="recap-body"></div>
@@ -172,7 +172,7 @@
 
   <!-- Web 1.0 taskbar (CSS reveals it only in that theme) -->
   <div id="taskbar">
-    <button id="start-btn" class="start-btn">CineSpin</button>
+    <button id="start-btn" class="start-btn">CineClub</button>
     <span id="taskbar-clock" class="taskbar-clock"></span>
   </div>
 
