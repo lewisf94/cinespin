@@ -335,11 +335,13 @@ function playSpinOverlay(spin, onDone) {
     const t = Math.min(1, (now - startTime) / duration);
     const eased = 1 - Math.pow(1 - t, 5); // easeOutQuint — slow, satisfying settle
     const rotation = eased * target;
-    // easeOutQuint has a long, imperceptible tail; once we're within ~1° of home
-    // the wheel looks stopped, so finish there instead of waiting out the timer —
-    // otherwise the confetti lands a beat late.
-    const settled = t >= 1 || target - rotation < 0.02;
-    drawWheel(ctx, size, segments, rotation, settled ? winnerIndex : -1);
+    // easeOutQuint's tail crawls in imperceptibly, so we cut it rather than wait
+    // out the full timer. Keep the threshold tight (~0.1°): cutting too early
+    // froze the wheel — and flipped on the winner highlight — while it was still
+    // visibly turning, which read as the result "jumping in" before it settled.
+    // Snap the final frame to the exact target so it lands cleanly.
+    const settled = t >= 1 || target - rotation < 0.002;
+    drawWheel(ctx, size, segments, settled ? target : rotation, settled ? winnerIndex : -1);
     drawPointer(ctx, size);
 
     const boundary = Math.floor(rotation / seg);
