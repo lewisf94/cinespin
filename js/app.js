@@ -295,7 +295,8 @@ function announceRound(cf) {
     if (cf.movieId !== lastAnnouncedFilm) {
       lastAnnouncedFilm = cf.movieId;
       lastTurnAnnounced = null;
-      live.textContent = `This week's film: ${cf.title}${cf.spinnerName ? `, picked by ${cf.spinnerName}` : ""}.`;
+      const sn = memberName(cf.spinnerMemberId, cf.spinnerName);
+      live.textContent = `This week's film: ${cf.title}${sn ? `, picked by ${sn}` : ""}.`;
     }
   } else {
     lastAnnouncedFilm = null;
@@ -593,6 +594,12 @@ const orderedMembers = () =>
 // stops counting everywhere, even before their member doc is gone).
 const activeMemberIds = () => state.group?.memberOrder || [];
 
+// Resolve a member's display name from the member-locked subcollection by id.
+// Names are no longer denormalised onto the (world-readable) group doc, so we look
+// them up here. `fb` covers the brief window before the members listener populates
+// (and any legacy denormalised name still on an in-flight doc).
+const memberName = (id, fb = "") => (id && state.members.find((m) => m.id === id)?.name) || fb;
+
 // The club admin (creator). Falls back to the first joiner for older groups
 // created before adminMemberId was recorded.
 const groupAdminId = () =>
@@ -633,7 +640,7 @@ function maybeResolveVote() {
   const w = voteWinner();
   if (!w) return;
   resolvingVote = true;
-  const fire = () => commitVoteWinner(state.code, w, new Date(Date.now() + 7 * 86400000), v.startedByName || "")
+  const fire = () => commitVoteWinner(state.code, w, new Date(Date.now() + 7 * 86400000), v.startedBy || "")
     .catch(() => { resolvingVote = false; });
   if (currentSpinnerId(state.group) === getMemberId()) fire();
   else setTimeout(() => {
@@ -788,8 +795,8 @@ function renderFilmCard() {
       ${tmdbEnabled ? `<div id="watch-providers" class="watch-providers"></div><div id="who-can-watch" class="who-can-watch"></div>
       <button type="button" class="text-link edit-prov-link" data-edit-prov="${esc(cf.movieId)}">Streaming info wrong? Fix it</button>` : ""}
       <div class="film-meta">
-        <span>picked by <b>${esc(cf.spinnerName || "—")}</b></span>
-        <span>added by <b>${esc(cf.addedByName || "—")}</b></span>
+        <span>picked by <b>${esc(memberName(cf.spinnerMemberId, cf.spinnerName) || "—")}</b></span>
+        <span>added by <b>${esc(movie.addedByName || cf.addedByName || "—")}</b></span>
       </div>
       <div class="deadline-row">
         <span class="deadline-pill" id="countdown">${countdownText(countdownDeadline)}</span>
@@ -964,7 +971,7 @@ function renderWheelTab() {
       const winner = chooseWinnerIndex(segs.length);
       const deadline = new Date(Date.now() + 7 * 86400000);
       try {
-        await commitSpin(state.code, segs, winner, getName(), deadline);
+        await commitSpin(state.code, segs, winner, getMemberId(), deadline);
       } catch (e) {
         alert("Spin failed: " + e.message);
         spinBtn.textContent = "Spin";
@@ -1029,10 +1036,11 @@ function renderVoting(pane, vote, movies, myId, spinnerId, orderHtml) {
     </label></li>`;
   }).join("");
 
+  const voteStarter = memberName(vote.startedBy, vote.startedByName);
   pane.innerHTML = `
     <div class="card vote-card">
       <div class="film-banner">Vote for the week's film</div>
-      <p class="muted small">A shortlist of ${shortlist.length}${vote.startedByName ? `, drawn by ${esc(vote.startedByName)}` : ""} — tick every film you'd be happy to watch. Most approvals wins.</p>
+      <p class="muted small">A shortlist of ${shortlist.length}${voteStarter ? `, drawn by ${esc(voteStarter)}` : ""} — tick every film you'd be happy to watch. Most approvals wins.</p>
       <ul class="vote-list">${rows || '<li class="muted">No films available.</li>'}</ul>
       <div class="vote-actions">
         <button class="btn primary" id="vote-submit">${iVoted ? "Update my picks" : "Submit my picks"}</button>
@@ -1056,7 +1064,7 @@ function renderVoting(pane, vote, movies, myId, spinnerId, orderHtml) {
     $("#vote-close").addEventListener("click", () => {
       const w = voteWinner();
       if (w && confirm(`Close the vote and pick "${w.title}" (the most approved) now?`)) {
-        commitVoteWinner(state.code, w, new Date(Date.now() + 7 * 86400000), vote.startedByName || getName());
+        commitVoteWinner(state.code, w, new Date(Date.now() + 7 * 86400000), vote.startedBy || getMemberId());
       }
     });
     $("#vote-cancel").addEventListener("click", () => { if (confirm("Cancel this vote and go back to the wheel?")) cancelVote(state.code); });
@@ -1962,7 +1970,7 @@ function renderResetBanner() {
   el.classList.remove("hidden");
   el.innerHTML = `
     <div class="reset-box">
-      <div class="reset-head">${mine ? "You proposed resetting the club" : esc(rr.startedByName || "Someone") + " wants to reset the club"}</div>
+      <div class="reset-head">${mine ? "You proposed resetting the club" : esc(memberName(rr.startedBy, rr.startedByName) || "Someone") + " wants to reset the club"}</div>
       <p class="reset-desc">This clears every film, rating and review and starts the club fresh — members and the club code stay. It only happens once <b>everyone</b> approves.</p>
       <div class="reset-progress">Approved ${approvedCount} / ${ids.length}</div>
       <div class="reset-actions">

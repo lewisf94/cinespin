@@ -57,7 +57,7 @@ export async function createGroup(groupName) {
   await setDoc(doc(db, "groups", code), {
     name: (groupName || "").trim() || "Film Club",
     createdAt: serverTimestamp(),
-    createdByName: name,
+    // No createdByName — names aren't denormalised onto the world-readable group doc.
     adminMemberId: memberId,            // the creator runs the club (can kick)
     memberOrder: [memberId],
     memberUids: uid ? [uid] : [],
@@ -212,8 +212,7 @@ export async function requestReset(code, memberId, name) {
   }
   await updateDoc(doc(db, "groups", code), {
     resetRequest: {
-      startedBy: memberId,
-      startedByName: name || "",
+      startedBy: memberId, // name resolved from members at render, not stored on the group doc
       startedAt: Date.now(),
       approvals: [memberId], // the proposer approves by definition
     },

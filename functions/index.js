@@ -85,7 +85,7 @@ function currentSpinnerMemberId(group) {
 // The client still picks the winner (the randomness isn't a trust boundary —
 // it's a party wheel); the server enforces who/when and that it's a real film.
 exports.commitSpin = onCall(async (request) => {
-  const { code, groupRef, group, memberName, memberId } = await loadMembership(request);
+  const { code, groupRef, group, memberId } = await loadMembership(request);
   if (group.currentFilm) throw new HttpsError("failed-precondition", "A film is already in play.");
   if (currentSpinnerMemberId(group) !== memberId) {
     throw new HttpsError("permission-denied", "It's not your turn to spin.");
@@ -117,8 +117,9 @@ exports.commitSpin = onCall(async (request) => {
     currentFilm: {
       movieId: winner.id,
       title: winner.title || movieSnap.data().title || "",
-      addedByName: movieSnap.data().addedByName || "",
-      spinnerName: memberName,
+      // id not name — the group doc is readable by code, so names would leak;
+      // resolved from the member-locked subcollection (and movie doc) at render.
+      spinnerMemberId: memberId,
       pickedAt: now,
       deadline,
     },
@@ -128,7 +129,6 @@ exports.commitSpin = onCall(async (request) => {
       durationMs: SPIN_DURATION_MS,
       segments: segments.map((s) => ({ id: s.id, title: s.title || "" })),
       winnerIndex,
-      spinnerName: memberName,
     },
   });
   await batch.commit();
@@ -208,12 +208,11 @@ exports.finalizeRound = onCall(async (request) => {
 
 // ---- reset: request / approve(+wipe) / cancel ------------------------------
 exports.requestReset = onCall(async (request) => {
-  const { groupRef, group, memberId, memberName } = await loadMembership(request);
+  const { groupRef, group, memberId } = await loadMembership(request);
   if (group.resetRequest) return { ok: true, already: true };
   await groupRef.update({
     resetRequest: {
-      startedBy: memberId,
-      startedByName: memberName,
+      startedBy: memberId, // name resolved from the member-locked subcollection at render
       startedAt: Date.now(),
       approvals: [memberId],
     },

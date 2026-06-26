@@ -40,12 +40,15 @@ items only the project owner can do._
 
 ## Code hardenings (I can do these)
 
-- [ ] **5. [code/claude] MEDIUM — stop leaking member names via a guessed code (SH-3).**
-  `allow get: if signedIn()` (`firestore.rules:95`) returns the whole group doc, including the
-  **denormalised display names** (`createdByName`, `currentFilm.spinnerName`/`addedByName`) and the
-  current film — so a guessed/leaked 5-char code exposes them *before* joining. Fix: store only
-  member **ids** on the group doc and resolve names from the member-locked subcollection.
-  _(Touches `js/groups.js` createGroup, `js/movies.js` commitSpin/commitVoteWinner, and the render in `js/app.js`.)_
+- [x] **5. [code/claude] MEDIUM — stop leaking member names via a guessed code (SH-3).** Done (client +
+  Functions; no rules change, so the client half is live on push via Pages). Removed every denormalised
+  name from the world-readable group doc: `createdByName` (was unused), `currentFilm.spinnerName` →
+  `spinnerMemberId`, `currentFilm.addedByName` (now resolved from the member-locked movie doc),
+  `lastSpin.spinnerName` (was unused), and `vote`/`resetRequest` `startedByName` → resolve from
+  `startedBy`. Names resolve from the member-locked subcollection at render via a new `memberName()`
+  helper (with a legacy fallback so in-flight rounds don't blank out). Mirrored in `functions/index.js`.
+  _Residual: group-doc `get` still exposes the **club name + current film title** (lower-sensitivity;
+  fully closing needs longer codes or a bigger redesign — App Check (#2) is the better lever)._
 
 - [x] **6. [code/claude] MEDIUM — make a film's identity immutable.** Done in `firestore.rules`.
   Split the `movies` rule into create/update/delete: `title`/`addedByMemberId`/`addedByName` can't be

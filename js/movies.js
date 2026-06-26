@@ -53,7 +53,9 @@ export async function removeMovie(code, movieId) {
 export async function startVote(code, memberId, name, shortlist) {
   await updateDoc(doc(db, "groups", code), {
     vote: {
-      startedBy: memberId, startedByName: name || "", startedAt: Date.now(),
+      // Only the starter's member id — names are resolved from the member-locked
+      // subcollection at render, so they don't leak via the world-readable group doc.
+      startedBy: memberId, startedAt: Date.now(),
       shortlist: Array.isArray(shortlist) ? shortlist : [],
       ballots: {},
     },
@@ -67,7 +69,7 @@ export async function submitBallot(code, memberId, movieIds) {
 export async function cancelVote(code) {
   await updateDoc(doc(db, "groups", code), { vote: null });
 }
-export async function commitVoteWinner(code, winner, deadlineDate, spinnerName) {
+export async function commitVoteWinner(code, winner, deadlineDate, spinnerMemberId) {
   const deadline = Timestamp.fromDate(deadlineDate);
   const now = Timestamp.now();
   await runTransaction(db, async (tx) => {
@@ -80,7 +82,7 @@ export async function commitVoteWinner(code, winner, deadlineDate, spinnerName) 
     tx.update(groupRef, {
       currentFilm: {
         movieId: winner.id, title: winner.title,
-        addedByName: winner.addedByName || "", spinnerName: spinnerName || "",
+        spinnerMemberId: spinnerMemberId || "", // id not name — see commitSpin
         pickedAt: now, deadline,
       },
       vote: null,
@@ -127,7 +129,7 @@ export async function setMovieServices(code, movieId, serviceIds) {
 // though the winner immediately leaves the "wheel" status. currentFilm is the
 // authoritative film-of-the-week; lastSpin just drives the animation overlay.
 // watchedBy starts empty and fills as each member confirms they've watched.
-export async function commitSpin(code, segments, winnerIndex, spinnerName, deadlineDate) {
+export async function commitSpin(code, segments, winnerIndex, spinnerMemberId, deadlineDate) {
   if (useFunctions) {
     await callFunction("commitSpin", {
       code,
@@ -152,8 +154,11 @@ export async function commitSpin(code, segments, winnerIndex, spinnerName, deadl
     currentFilm: {
       movieId: winner.id,
       title: winner.title,
-      addedByName: winner.addedByName || "",
-      spinnerName: spinnerName || "",
+      // Store the spinner's member id, not their name. The group doc is readable
+      // by any signed-in user (needed to look a club up by code), so a denormalised
+      // name would leak; names are resolved from the member-locked subcollection
+      // at render. addedBy is resolved from the (member-locked) movie doc.
+      spinnerMemberId: spinnerMemberId || "",
       pickedAt: now,
       deadline,
     },
@@ -163,7 +168,6 @@ export async function commitSpin(code, segments, winnerIndex, spinnerName, deadl
       durationMs: 11500, // spin length — a long, drawn-out settle to build tension
       segments: segments.map((s) => ({ id: s.id, title: s.title })),
       winnerIndex,
-      spinnerName: spinnerName || "",
     },
   });
 }
