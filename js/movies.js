@@ -160,7 +160,7 @@ export async function commitSpin(code, segments, winnerIndex, spinnerName, deadl
     lastSpin: {
       seed: stamp,
       startedAt: stamp,
-      durationMs: 6000,
+      durationMs: 8500, // spin length — long enough to build a bit of tension
       segments: segments.map((s) => ({ id: s.id, title: s.title })),
       winnerIndex,
       spinnerName: spinnerName || "",

@@ -38,6 +38,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .topbar-group { display: flex; align-items: center; gap: 10px; }
 .group-name { font-weight: 600; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.menu-btn { display: none; } /* mobile-only: collapses .topbar-right into a dropdown */
 .chip {
   background: transparent; color: var(--text); border: 1px solid var(--line-strong);
   border-radius: var(--radius); padding: 7px 13px; font-size: 0.82rem; font-family: var(--sans);
@@ -642,11 +643,25 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 @media (max-width: 640px) {
   .topbar { flex-wrap: wrap; padding: 10px 14px; gap: 8px 10px; }
   .brand { font-size: 1.15rem; }
-  .topbar-right { gap: 6px; }
   .chip { padding: 6px 10px; font-size: 0.78rem; }
   .copy-label { display: none; }
-  .group-name { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #who-am-i { max-width: 32vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .group-name { max-width: 50vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* The right-hand utility chips collapse behind a "Menu" button: the brand and
+     the Menu button share the top row; the club name + code + invite drop to a
+     full-width second row; the chips themselves become a dropdown panel. */
+  .menu-btn { display: inline-flex; order: 2; margin-left: auto; }
+  #group-meta { order: 3; flex-basis: 100%; }
+  .topbar-right {
+    position: absolute; top: 100%; right: 14px; margin: 0; gap: 6px;
+    display: none; flex-direction: column; align-items: stretch;
+    min-width: 172px; padding: 8px; z-index: 60;
+    background: var(--panel); border: 1px solid var(--line-strong);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.3);
+  }
+  .topbar-right.open { display: flex; }
+  .topbar-right .chip { width: 100%; text-align: left; }
+  .topbar-right #who-am-i { max-width: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   #main { padding: 24px 14px 64px; }
   .card { padding: 17px; }

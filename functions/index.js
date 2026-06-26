@@ -30,7 +30,7 @@ initializeApp();
 const db = getFirestore();
 
 const DEFAULT_DEADLINE_DAYS = 7;
-const SPIN_DURATION_MS = 6000;
+const SPIN_DURATION_MS = 8500;
 const REMIND_WITHIN_MS = 48 * 3600 * 1000; // nudge once the deadline is ≤48h away
 
 function requireAuthUid(request) {

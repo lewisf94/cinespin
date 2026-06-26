@@ -318,7 +318,7 @@ function playSpinOverlay(spin, onDone) {
   // Land the winner's centre under the top pointer (-90°), plus full spins.
   const pointer = -Math.PI / 2;
   const baseCentre = (winnerIndex + 0.5) * seg;
-  const spins = 5 + (Math.floor((spin.seed || 0) / 137) % 3); // deterministic flair
+  const spins = 6 + (Math.floor((spin.seed || 0) / 137) % 3); // deterministic flair (6–8 turns)
   let aligned = pointer - baseCentre;
   aligned = ((aligned % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   const target = spins * 2 * Math.PI + aligned;

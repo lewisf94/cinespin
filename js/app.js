@@ -153,6 +153,33 @@ function wireStaticUI() {
   });
   $("#leave-btn").addEventListener("click", leaveGroup);
 
+  // Mobile: the right-hand utility chips collapse behind the "Menu" button.
+  const menuBtn = $("#menu-btn");
+  const topbarRight = $("#topbar-right");
+  if (menuBtn && topbarRight) {
+    const closeMenu = () => {
+      topbarRight.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded", "false");
+    };
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = topbarRight.classList.toggle("open");
+      menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    // Selecting a chip closes the menu — except Theme, which opens its own
+    // popover anchored to the (still-visible) button.
+    topbarRight.addEventListener("click", (e) => {
+      if (e.target.closest("#theme-btn")) return;
+      if (e.target.closest("button")) closeMenu();
+    });
+    // A tap anywhere outside, or Escape, closes it.
+    document.addEventListener("click", (e) => {
+      if (menuBtn.contains(e.target) || topbarRight.contains(e.target)) return;
+      closeMenu();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+  }
+
   // Reveal a ||spoiler|| on click or Enter/Space.
   document.addEventListener("click", (e) => {
     const sp = e.target.closest?.(".spoiler");
@@ -913,6 +940,10 @@ function renderWheelTab() {
     spinBtn.addEventListener("click", async () => {
       resumeAudio();
       spinBtn.disabled = true;
+      // Immediate feedback: the spin overlay is driven by the Firestore write
+      // landing, so on a slow connection there'd otherwise be a dead beat between
+      // the tap and anything happening.
+      spinBtn.textContent = "Spinning…";
       const segs = movies.map((m) => ({ id: m.id, title: m.title, addedByName: m.addedByName }));
       const winner = chooseWinnerIndex(segs.length);
       const deadline = new Date(Date.now() + 7 * 86400000);
@@ -920,6 +951,7 @@ function renderWheelTab() {
         await commitSpin(state.code, segs, winner, getName(), deadline);
       } catch (e) {
         alert("Spin failed: " + e.message);
+        spinBtn.textContent = "Spin";
         spinBtn.disabled = false;
       }
     });
