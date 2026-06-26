@@ -18,13 +18,10 @@ items only the project owner can do._
 
 ## Do first
 
-- [ ] **1. [console/you] CRITICAL — confirm the *deployed* Firestore rules match the repo.**
-  Rules don't auto-deploy; the live DB may still be running old permissive/test-mode rules
-  (`allow … if true`), which would make every club's reviews/names/films world-readable/writable.
-  - Firebase console → **Firestore Database → Rules** → compare to [`firestore.rules`](./firestore.rules); **Publish** if different.
-  - **Emulator-test first** (the rules use `get()`-based member checks — SH-8).
-  - Skim **Firestore → Usage** for unexpected read/write volume.
-  - After publishing, have everyone **re-join once** (so each member's uid is recorded in `memberUids`).
+- [x] **1. [console/you] CRITICAL — deployed rules confirmed + republished.** The deployed rules were
+  already the hardened member-locked set (NOT permissive/test-mode), so data was never wide open. Pasted
+  the latest repo `firestore.rules` (incl. the #6 film-identity hardening) and **Published**. Good practice
+  still: if many old members haven't opened the app since uid-recording went live, have them re-join once.
 
 - [x] **2. [console/you] HIGH — enable App Check (reCAPTCHA v3).** DONE & verified: site key live,
   metrics showed 100% verified (33/33, 0 unverified), enforcement ON for Cloud Firestore, and the app
