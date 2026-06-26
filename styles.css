@@ -27,6 +27,8 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .small { font-size: 0.85rem; }
 .center { text-align: center; }
 .error { color: var(--danger); min-height: 1.2em; }
+/* Backend-trouble banner (over free quota / unreachable / App Check block). */
+.conn-banner { margin-bottom: 18px; padding: 14px 18px; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; font-size: 0.95rem; line-height: 1.5; }
 
 /* ---- topbar ---- */
 .topbar {

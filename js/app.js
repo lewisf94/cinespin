@@ -84,8 +84,10 @@ async function init() {
   try {
     await ensureAuth();
   } catch (e) {
-    show($("#screen-config"));
-    $("#config-extra").textContent = "Auth error: " + e.message;
+    // We're past the isConfigured check, so this is a runtime failure (network /
+    // App Check), not a setup one — show the friendly banner over the landing.
+    showLanding();
+    showConnError(friendlyConnMessage(e) || "Couldn't connect to CineSpin — please try reloading.");
     return;
   }
 
@@ -513,7 +515,7 @@ async function handleCreate() {
     const code = await createGroup($("#new-group-name").value);
     attachGroup(code);
   } catch (e) {
-    $("#landing-error").textContent = e.message;
+    $("#landing-error").textContent = friendlyConnMessage(e) || e.message;
   }
 }
 async function handleJoin(raw) {
@@ -525,11 +527,34 @@ async function handleJoin(raw) {
     await joinGroup(code);
     attachGroup(code);
   } catch (e) {
-    $("#landing-error").textContent = e.message;
+    $("#landing-error").textContent = friendlyConnMessage(e) || e.message;
   }
 }
 
 // ---- live data -------------------------------------------------------------
+// ---- backend-trouble messaging ---------------------------------------------
+// Map a Firestore/Auth error to a friendly explanation when the backend is
+// unreachable, over its free daily quota, or blocking this browser (App Check),
+// so the app shows a clear banner instead of silently freezing. "" = no nicer
+// message than the raw one (callers fall back to err.message).
+function friendlyConnMessage(err) {
+  const code = (err && err.code) || "";
+  if (code === "resource-exhausted")
+    return "CineSpin's hit its free daily limit — it'll be back tomorrow. Thanks for the interest!";
+  if (code === "unavailable" || code === "deadline-exceeded" || code === "internal" || code === "aborted")
+    return "Can't reach CineSpin right now — check your connection and try again in a moment.";
+  if (code === "unauthenticated" || code === "permission-denied" || code.indexOf("app-check") !== -1)
+    return "Couldn't verify this browser. If you're on a strict ad/privacy blocker, a VPN, or private mode, try turning those off or use a different browser.";
+  return "";
+}
+function showConnError(msg) {
+  const el = $("#conn-banner");
+  if (!el || !msg) return;
+  el.textContent = msg;
+  show(el);
+}
+function clearConnError() { hide($("#conn-banner")); }
+
 function subscribe(code) {
   // The four listeners often fire together (initial load delivers all four; a
   // single action like a spin touches the group doc AND a movie). Coalesce the
@@ -541,36 +566,45 @@ function subscribe(code) {
   // failing with permission-denied. Don't swallow it: confirm we were kicked
   // and eject. (The group-doc listener keeps working — single-doc get is open —
   // and is the usual trigger via checkKicked() in render; this is the backstop.)
-  const onDenied = (err) => { if (err?.code === "permission-denied") checkKicked(); };
+  // Surface backend trouble (over free quota / unreachable) and App-Check blocks
+  // as a friendly banner instead of a silently frozen app. permission-denied on a
+  // SUBcollection means membership/kick (handled by checkKicked); on the open
+  // group-doc get it can only mean App Check blocked this browser.
+  const onSubErr = (err) => {
+    if (err?.code === "permission-denied") { checkKicked(); return; }
+    showConnError(friendlyConnMessage(err));
+  };
+  const onGroupErr = (err) => showConnError(friendlyConnMessage(err));
   state.unsub.push(
     onSnapshot(doc(db, "groups", code), (snap) => {
+      clearConnError();                 // a successful read = backend reachable
       state.group = snap.exists() ? snap.data() : null;
       scheduleRender();
-    }, onDenied)
+    }, onGroupErr)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "members"), (snap) => {
       state.members = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    }, onDenied)
+    }, onSubErr)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "movies"), (snap) => {
       state.movies = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    }, onDenied)
+    }, onSubErr)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "ratings"), (snap) => {
       state.ratings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    }, onDenied)
+    }, onSubErr)
   );
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "comments"), (snap) => {
       state.comments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
-    }, onDenied)
+    }, onSubErr)
   );
 }
 function teardownSubs() {
