@@ -8,7 +8,7 @@ the turn passes only once **every** member has watched **and** rated.
 It's a **static site** — plain HTML/CSS/vanilla JS, **no build step** — backed by
 **Firebase** (Cloud Firestore + Anonymous Auth), deployed on GitHub Pages.
 
-- Live: https://thecineclub.co.uk (also https://lewisf94.github.io/cinespin/ — redirects once custom domain is active)
+- Live: https://thecineclub.co.uk (also https://lewisf94.github.io/cineclub/ — redirects to the custom domain)
 - **Current status & handoff (read this first): [HANDOFF.md](./HANDOFF.md)**
 - Improvement backlog (done / deferred / open): [ROADMAP.md](./ROADMAP.md)
 - Technical / data-model reference: [ARCHITECTURE.md](./ARCHITECTURE.md)
@@ -88,7 +88,7 @@ reveal, stats, and a reset — across all three themes, desktop + mobile.
 ## Deploy
 
 GitHub Pages serves `main` at the root; pushing to `main` redeploys to
-https://lewisf94.github.io/cinespin/ within ~a minute. `.nojekyll` stops Pages
+https://lewisf94.github.io/cineclub/ within ~a minute. `.nojekyll` stops Pages
 from ignoring the `js/` folder.
 
 **Git workflow: commit straight to `main`.** Don't create feature branches —

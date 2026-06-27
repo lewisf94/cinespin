@@ -1,6 +1,6 @@
 # CineClub
 
-**Live app → <https://lewisf94.github.io/cinespin/>**
+**Live app → <https://thecineclub.co.uk>**
 
 A film-club wheel for groups of friends. Add films to a wheel, take turns each
 week spinning to pick what to watch, set a watch-by deadline, then rate (in
@@ -165,7 +165,7 @@ Cloud Functions) — there's a generous free tier, but a card on file.
 3. Under **Build and deployment → Source**, choose **Deploy from a branch**.
 4. Pick branch **`main`**, folder **`/ (root)`**, and **Save**.
 5. After a minute your site is live at:
-   **`https://lewisf94.github.io/cinespin/`**
+   **`https://lewisf94.github.io/cineclub/`**
 
 Share that link (or the in-app club code) with your friends and you're set.
 
@@ -177,7 +177,7 @@ Because the app uses JavaScript modules, open it through a local web server
 (not by double-clicking the file). With your Firebase config already filled in:
 
 ```bash
-cd cinespin
+cd cineclub
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```

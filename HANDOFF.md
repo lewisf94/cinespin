@@ -13,38 +13,23 @@ This trips people up, so read it first:
 | Thing | Name | Notes |
 |-------|------|-------|
 | **Brand** (what users see) | **CineClub** | Was "CineSpin" (clashed with an existing app + domain), before that "Spinema" / "cinewheel". Reads as Cine·Club. |
-| **GitHub repo** | **`cinespin` → `cineclub`** | **Being renamed** to match the brand (was deliberately left as `cinespin`; repo name ≠ brand is fine — just tidying). **Low-risk:** every remaining `cinespin` mention is in **docs only**, no functional code references the repo path. See the rename checklist below. `thecineclub.co.uk` fronts it either way. |
+| **GitHub repo** | **`cineclub`** | Renamed from `cinespin` to match the brand (2026-06-27). `thecineclub.co.uk` fronts it. |
 | **Firebase project** | **`cinewheel-79636`** | **Do NOT rename** — internal id, never shown to users; renaming breaks the config. |
 | **localStorage keys** | `cineclub_*` | Renamed from `cinespin_*` with the CineClub rebrand — no migration (test-only, as with prior renames); existing browsers just re-enter their name once. |
 
 The app uses **relative paths** everywhere (no hardcoded domain/path), and the
 live site is the **domain root** `thecineclub.co.uk` (not a `/repo/` subpath), so
-the Pages path changing (`/cinespin/` → `/cineclub/`) does not affect the app.
+the Pages path changing had no effect on the app.
 
-### Repo-rename checklist — `cinespin` → `cineclub` (the next task)
+### Repo-rename `cinespin` → `cineclub` — DONE (2026-06-27)
 
-The rename is on GitHub (repo Settings → rename). Low-risk: no functional code
-references the old name (verified — all remaining `cinespin` mentions are docs).
-After renaming:
-
-- **⚠️ Verify Pages survived the rename FIRST.** Settings → Pages: confirm the
-  custom domain still reads `thecineclub.co.uk` with **Enforce HTTPS** on and the
-  DNS check green. The repo-root `CNAME` file re-asserts it on the next build, but
-  a rename can bounce the Pages build — if the field cleared, re-enter
-  `thecineclub.co.uk` and Save. This is the **only** thing that can actually break.
-- **No Firebase / DNS / reCAPTCHA / API-key changes.** Those are all keyed on the
-  **domain** (`thecineclub.co.uk`, `lewisf94.github.io`), not the repo path. The
-  API-key referrer rule `https://lewisf94.github.io/*` already covers `/cineclub/`.
-- **Update doc references** `…/cinespin/` → `…/cineclub/` (cosmetic — the github.io
-  URL is just a redirect now): `README.md` (~3, 168, 180), `CLAUDE.md` (~11, 91),
-  `CONTRIBUTING.md` (~32), `support/index.html` (~13), and this file's table.
-- **Session/remote:** start the new chat against `lewisf94/cineclub`. GitHub
-  redirects the old git remote, but the new session's GitHub tools should target
-  the new name. Commit straight to **`main`** as always.
+- Pages survived the rename — custom domain `thecineclub.co.uk` with Enforce HTTPS stayed set. ✅
+- No Firebase / DNS / reCAPTCHA / API-key changes needed. ✅
+- Doc references updated (`README.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `support/index.html`, this file). ✅
 
 ## Where things stand
 
-- **Live:** <https://thecineclub.co.uk> — custom domain **fully set up and working** (Fasthosts DNS → GitHub Pages, custom domain + Enforce HTTPS, repo-root `CNAME`). The old `lewisf94.github.io/cinespin/` redirects to it.
+- **Live:** <https://thecineclub.co.uk> — custom domain **fully set up and working** (Fasthosts DNS → GitHub Pages, custom domain + Enforce HTTPS, repo-root `CNAME`). `lewisf94.github.io/cineclub/` redirects to it.
 - **Domain migration (2026-06-27) — DONE.** Three console lists were updated so the new domain works, all keyed on `thecineclub.co.uk` (+ `www`): Firebase Auth **Authorized domains**, the reCAPTCHA v3 key's **Domains** (App Check), and the Firebase **API-key HTTP-referrer** allowlist. That last one was the final blocker — anon sign-in is rejected from any referrer not on the list, which surfaced as the generic "Couldn't connect" banner.
 - **Backend:** Firebase project `cinewheel-79636` (Firestore + Anonymous Auth + Email-link sign-in). Config in `js/firebase.js`.
 - **Code:** all of the prioritized roadmap (P0–P4) plus the 2026-06 feature queue and security hardening are built and on `main`.
