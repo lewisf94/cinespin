@@ -8,7 +8,7 @@ the turn passes only once **every** member has watched **and** rated.
 It's a **static site** — plain HTML/CSS/vanilla JS, **no build step** — backed by
 **Firebase** (Cloud Firestore + Anonymous Auth), deployed on GitHub Pages.
 
-- Live: https://lewisf94.github.io/cinespin/
+- Live: https://thecineclub.co.uk (also https://lewisf94.github.io/cinespin/ — redirects once custom domain is active)
 - **Current status & handoff (read this first): [HANDOFF.md](./HANDOFF.md)**
 - Improvement backlog (done / deferred / open): [ROADMAP.md](./ROADMAP.md)
 - Technical / data-model reference: [ARCHITECTURE.md](./ARCHITECTURE.md)

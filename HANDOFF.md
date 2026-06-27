@@ -29,7 +29,7 @@ Pages URL changing from `/spinema/` to `/cinespin/` does not break anything.
 
 ## Where things stand
 
-- **Live:** static site on GitHub Pages at <https://lewisf94.github.io/cinespin/>.
+- **Live:** <https://thecineclub.co.uk> (custom domain fronting the GitHub Pages repo `cinespin`; <https://lewisf94.github.io/cinespin/> redirects once the custom domain is active in Pages settings).
 - **Backend:** Firebase project `cinewheel-79636` (Firestore + Anonymous Auth + Email-link sign-in). Config in `js/firebase.js`.
 - **Code:** all of the prioritized roadmap (P0–P4) plus the 2026-06 feature queue and security hardening are built and on `main`.
 
@@ -52,7 +52,7 @@ Pages URL changing from `/spinema/` to `/cinespin/` does not break anything.
 1. **CRITICAL — publish the rules.** Paste `firestore.rules` into Firebase → Firestore → Rules → Publish. The live DB still runs the **old permissive rules** until you do, so the member-lock + hardening (SH-2/4/6/8, incl. rating/comment author-pinning) aren't enforced yet. **Emulator-test first** (SH-8 adds `get()`-based checks). The uid-recording client is live, so have everyone **re-join once** after publishing.
 2. **Email template still says "cinewheel-79636".** Fix: Firebase → Project Settings → General → **Public-facing name** → set to **CineClub** → Save. (The sign-in-link email isn't a directly-editable template; it uses this name. Sender address stays `@cinewheel-79636.firebaseapp.com` unless you set up custom SMTP.)
 3. **Optional hardening:** App Check (SH-1), anonymous-account auto-cleanup (SH-5), API-key referrer restriction. README + ROADMAP have the steps.
-4. **Email-link sign-in** is already enabled and confirmed working (Email/Password + Email link, `lewisf94.github.io` in Authorized domains, auth-handler domain in the API-key referrer list).
+4. **Email-link sign-in** is already enabled and confirmed working (Email/Password + Email link, `lewisf94.github.io` in Authorized domains). **Add `thecineclub.co.uk` to Firebase Auth → Settings → Authorized domains** so email-link sign-in works on the custom domain.
 
 ## Still open / next candidates (details in ROADMAP.md)
 
