@@ -915,7 +915,7 @@ function renderFilmCard() {
       <p class="muted">${subtext}</p>
       <button class="btn ${isMe || !canSpin ? "primary" : ""}" id="goto-wheel">${btnLabel}</button>
     `;
-    $("#goto-wheel").addEventListener("click", () => switchTab("wheel"));
+    $("#goto-wheel").addEventListener("click", () => switchTab(canSpin ? "wheel" : "movies"));
   }
 }
 
