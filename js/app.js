@@ -795,7 +795,7 @@ function render() {
   if (state.tab === "wheel") renderWheelTab();
   else if (state.tab === "movies") { if (!editingWithin($("#tab-movies"))) renderMoviesTab(); }
   else if (state.tab === "history") { if (!editingWithin($("#tab-history"))) renderHistoryTab(); }
-  else if (state.tab === "stats") { const sc = $("#tab-stats"); renderStats(sc, state.movies, state.ratings, orderedMembers()); appendStatsRecs(sc); appendRecapButton(sc); appendResetControl(sc); }
+  else if (state.tab === "stats") { const sc = $("#tab-stats"); renderStats(sc, state.movies, state.ratings, orderedMembers(), getMemberId()); appendStatsRecs(sc); appendRecapButton(sc); appendResetControl(sc); }
 
   maybePlaySpin(state.group?.lastSpin);
 }

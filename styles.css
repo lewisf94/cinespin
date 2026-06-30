@@ -373,6 +373,14 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .people-table th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 @media (max-width: 560px) { .stats-tiles { grid-template-columns: repeat(2, 1fr); } }
 
+/* ---- rating distribution bar chart ---- */
+.rating-dist { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+.dist-row { display: flex; align-items: center; gap: 8px; }
+.dist-label { width: 30px; text-align: right; flex-shrink: 0; }
+.dist-bar-wrap { flex: 1; background: var(--line); border-radius: 2px; height: 10px; overflow: hidden; min-width: 0; }
+.dist-bar { height: 100%; background: var(--accent); border-radius: 2px; min-width: 2px; }
+.dist-count { width: 24px; flex-shrink: 0; }
+
 /* ---- modal ---- */
 .modal { position: fixed; inset: 0; background: rgba(10, 10, 13, 0.8); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .modal-box { background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 30px; max-width: 400px; width: 100%; }

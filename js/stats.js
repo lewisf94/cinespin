@@ -18,7 +18,8 @@ function esc(s) {
   );
 }
 
-export function renderStats(container, movies, ratings, members) {
+// myMemberId: the current browser member — used for the "your take vs the group" section.
+export function renderStats(container, movies, ratings, members, myMemberId) {
   const watched = movies.filter((m) => m.status === "watched");
   const onWheel = movies.filter((m) => m.status === "wheel");
   const addedByOf = Object.fromEntries(movies.map((m) => [m.id, m.addedByMemberId]));
@@ -45,6 +46,12 @@ export function renderStats(container, movies, ratings, members) {
     (scoresFor[r.movieId] ||= []).push(r.score);
     const owner = addedByOf[r.movieId];
     if (owner) (receivedBy[owner] ||= []).push(r.score);
+  });
+
+  // Scores from everyone except the current member — used for the contrarian comparison.
+  const otherScores = {};
+  ratings.filter((r) => r.memberId !== myMemberId).forEach((r) => {
+    (otherScores[r.movieId] ||= []).push(r.score);
   });
 
   const tiles = [
@@ -78,6 +85,7 @@ export function renderStats(container, movies, ratings, members) {
         name: m.name || "Someone",
         added,
         given: given.length ? avg(given) : null,
+        sd: given.length >= 2 ? stdev(given) : null,
         received: received.length ? avg(received) : null,
       };
     })
@@ -97,6 +105,27 @@ export function renderStats(container, movies, ratings, members) {
   if (divisive) sups.push(superlative("Most divisive", esc(divisive.title), `±${fmt(divisive.sd)}`));
   if (sups.length) html += `<div class="superlatives">${sups.join("")}</div>`;
 
+  // Rating distribution — bar chart across all half-star buckets.
+  const HALF_STARS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+  const dist = {};
+  HALF_STARS.forEach((s) => (dist[s] = 0));
+  ratings.forEach((r) => { if (dist[r.score] !== undefined) dist[r.score]++; });
+  const maxDist = Math.max(...Object.values(dist), 1);
+  if (ratings.length > 0) {
+    html += `<div class="card"><h3>Rating distribution</h3><div class="rating-dist">`;
+    [...HALF_STARS].reverse().forEach((s) => {
+      const count = dist[s];
+      const pct = Math.round((count / maxDist) * 100);
+      const label = Number.isInteger(s) ? `${s}★` : `${s}★`;
+      html += `<div class="dist-row">
+        <span class="dist-label muted small">${esc(label)}</span>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%"></div></div>
+        <span class="dist-count muted small">${count || ""}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
   if (board.length) {
     html += `<div class="card"><h3>Film leaderboard</h3><ol class="leaderboard">`;
     board.forEach((m) => {
@@ -107,11 +136,47 @@ export function renderStats(container, movies, ratings, members) {
 
   if (members.length) {
     html += `<div class="card"><h3>Per person</h3><table class="people-table">
-      <thead><tr><th>Name</th><th>Added</th><th>Avg given</th><th>Avg received</th></tr></thead><tbody>`;
+      <thead><tr><th>Name</th><th>Added</th><th>Avg given</th><th title="How consistently they rate — lower spread = more predictable">Spread</th><th>Avg received</th></tr></thead><tbody>`;
     perPerson.forEach((p) => {
-      html += `<tr><td>${esc(p.name)}</td><td>${p.added}</td><td>${p.given == null ? "—" : fmt(p.given)}</td><td>${p.received == null ? "—" : fmt(p.received)}</td></tr>`;
+      html += `<tr>
+        <td>${esc(p.name)}</td>
+        <td>${p.added}</td>
+        <td>${p.given == null ? "—" : fmt(p.given)}</td>
+        <td>${p.sd == null ? "—" : `±${fmt(p.sd)}`}</td>
+        <td>${p.received == null ? "—" : fmt(p.received)}</td>
+      </tr>`;
     });
-    html += `</tbody></table><p class="muted small">"Avg received" = average score on films that person added.</p></div>`;
+    html += `</tbody></table>
+      <p class="muted small">"Avg received" = average score on films that person added. "Spread" = how consistently they rate (±stars from their own average).</p>
+    </div>`;
+  }
+
+  // Your take vs the group — films where the current member diverged most from everyone else.
+  if (myMemberId) {
+    const myScores = {};
+    ratings.filter((r) => r.memberId === myMemberId).forEach((r) => (myScores[r.movieId] = r.score));
+    const contrarian = watched
+      .map((m) => {
+        const mine = myScores[m.id];
+        if (mine == null) return null;
+        const others = otherScores[m.id];
+        if (!others || !others.length) return null;
+        const groupAvg = avg(others);
+        const gap = mine - groupAvg;
+        if (Math.abs(gap) < 0.5) return null;
+        return { title: m.title, mine, group: groupAvg, gap };
+      })
+      .filter(Boolean)
+      .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
+      .slice(0, 4);
+    if (contrarian.length >= 2) {
+      html += `<div class="card"><h3>Your take vs the group</h3>`;
+      contrarian.forEach((c) => {
+        const sign = c.gap > 0 ? "+" : "";
+        html += `<p class="meta-line"><b>${esc(c.title)}</b> — you gave ${fmt(c.mine)}★, others avg ${fmt(c.group)}★ <span class="muted small">(${sign}${fmt(c.gap)})</span></p>`;
+      });
+      html += `</div>`;
+    }
   }
 
   // Taste compatibility: average half-star gap between each pair of members on
@@ -143,7 +208,34 @@ export function renderStats(container, movies, ratings, members) {
     html += `</div>`;
   }
 
-  if (totalMins > 0 || topGenres.length || decades.length) {
+  // Genre avg scores — which genres the club rates highest/lowest (needs ≥2 films per genre).
+  const genreScores = {};
+  watched.forEach((m) => {
+    const scores = scoresFor[m.id];
+    if (!scores || !m.genres || !m.genres.length) return;
+    const filmAvg = avg(scores);
+    m.genres.forEach((g) => (genreScores[g] ||= []).push(filmAvg));
+  });
+  const genreAvgs = Object.entries(genreScores)
+    .filter(([, s]) => s.length >= 2)
+    .map(([g, s]) => ({ genre: g, avg: avg(s), n: s.length }))
+    .sort((a, b) => b.avg - a.avg);
+
+  // Decade avg scores — which era the club rates highest (needs ≥2 films per decade).
+  const decadeScores = {};
+  watched.forEach((m) => {
+    const y = parseInt(m.year, 10);
+    const scores = scoresFor[m.id];
+    if (isNaN(y) || !scores) return;
+    const d = Math.floor(y / 10) * 10;
+    (decadeScores[d] ||= []).push(avg(scores));
+  });
+  const decadeAvgs = Object.entries(decadeScores)
+    .filter(([, s]) => s.length >= 2)
+    .map(([d, s]) => ({ decade: Number(d), avg: avg(s), n: s.length }))
+    .sort((a, b) => b.avg - a.avg);
+
+  if (totalMins > 0 || topGenres.length || decades.length || genreAvgs.length || decadeAvgs.length) {
     html += `<div class="card"><h3>Watch habits</h3>`;
     if (totalMins > 0) {
       html += `<p class="meta-line"><b>${hoursMins(totalMins)}</b> of films watched`;
@@ -151,14 +243,50 @@ export function renderStats(container, movies, ratings, members) {
       html += `</p>`;
     }
     if (topGenres.length) {
-      html += `<p class="meta-line"><span class="muted small">Top genres</span><br>${topGenres
+      html += `<p class="meta-line"><span class="muted small">Top genres (by count)</span><br>${topGenres
         .map(([g, n]) => `${esc(g)} <span class="muted">(${n})</span>`)
         .join("  &middot;  ")}</p>`;
     }
+    if (genreAvgs.length) {
+      html += `<p class="meta-line"><span class="muted small">Highest rated genre</span><br>`;
+      html += `${esc(genreAvgs[0].genre)} <span class="muted">${fmt(genreAvgs[0].avg)}★ avg over ${genreAvgs[0].n} films</span>`;
+      if (genreAvgs.length > 1) {
+        const worst = genreAvgs[genreAvgs.length - 1];
+        html += ` &middot; <span class="muted small">lowest:</span> ${esc(worst.genre)} <span class="muted">${fmt(worst.avg)}★</span>`;
+      }
+      html += `</p>`;
+    }
     if (decades.length) {
-      html += `<p class="meta-line"><span class="muted small">By decade</span><br>${decades
+      html += `<p class="meta-line"><span class="muted small">By decade (films watched)</span><br>${decades
         .map(([d, n]) => `${d}s <span class="muted">(${n})</span>`)
         .join("  &middot;  ")}</p>`;
+    }
+    if (decadeAvgs.length) {
+      html += `<p class="meta-line"><span class="muted small">Highest rated era</span><br>`;
+      html += `${decadeAvgs[0].decade}s <span class="muted">${fmt(decadeAvgs[0].avg)}★ avg over ${decadeAvgs[0].n} films</span>`;
+      if (decadeAvgs.length > 1) {
+        const worst = decadeAvgs[decadeAvgs.length - 1];
+        html += ` &middot; <span class="muted small">lowest:</span> ${worst.decade}s <span class="muted">${fmt(worst.avg)}★</span>`;
+      }
+      html += `</p>`;
+    }
+    html += `</div>`;
+  }
+
+  // Wheel wait times — how long each film has been waiting to be spun.
+  const now = Date.now();
+  const wheelWaiting = onWheel
+    .filter((m) => m.addedAt)
+    .map((m) => ({ title: m.title, days: Math.floor((now - tms(m.addedAt)) / 86400000) }))
+    .sort((a, b) => b.days - a.days);
+  if (wheelWaiting.length) {
+    const avgWait = Math.round(avg(wheelWaiting.map((m) => m.days)));
+    html += `<div class="card"><h3>Wheel wait times</h3>`;
+    if (wheelWaiting[0].days > 0) {
+      html += `<p class="meta-line"><b>Longest waiting:</b> ${esc(wheelWaiting[0].title)} <span class="muted">(${wheelWaiting[0].days} day${wheelWaiting[0].days !== 1 ? "s" : ""})</span></p>`;
+    }
+    if (wheelWaiting.length > 1) {
+      html += `<p class="meta-line"><span class="muted small">Average time on the wheel: ${avgWait} day${avgWait !== 1 ? "s" : ""} across ${wheelWaiting.length} film${wheelWaiting.length !== 1 ? "s" : ""}</span></p>`;
     }
     html += `</div>`;
   }
