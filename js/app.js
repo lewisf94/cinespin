@@ -915,7 +915,13 @@ function renderFilmCard() {
       <p class="muted">${subtext}</p>
       <button class="btn ${isMe || !canSpin ? "primary" : ""}" id="goto-wheel">${btnLabel}</button>
     `;
-    $("#goto-wheel").addEventListener("click", () => switchTab(canSpin ? "wheel" : "movies"));
+    $("#goto-wheel").addEventListener("click", () => {
+      switchTab(canSpin ? "wheel" : "movies");
+      requestAnimationFrame(() => {
+        const tabs = document.querySelector(".tabs");
+        if (tabs) tabs.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
 }
 
