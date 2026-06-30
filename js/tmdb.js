@@ -11,8 +11,9 @@
 //  Key"). Note it's shipped in the client, like the Firebase key — fine for
 //  TMDB's non-commercial use; you can rotate/limit it any time.
 //
-//  Attribution (required by TMDB and shown in the UI): this product uses the
-//  TMDB API but is not endorsed or certified by TMDB. https://www.themoviedb.org
+//  Attribution (required by TMDB, shown in the UI with the TMDB logo): see
+//  TMDB_STATEMENT below — the wording is verbatim from TMDB's API Terms of Use.
+//  https://www.themoviedb.org
 // ============================================================================
 
 const TMDB_API_KEY = "f000eb911a380f5abc35f9cdcee19412"; // TMDB v3 API key; blank disables TMDB

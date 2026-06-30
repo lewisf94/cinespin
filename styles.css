@@ -218,7 +218,9 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .tmdb-item-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .tmdb-item-title { font-weight: 600; }
 .tmdb-attribution { margin: 10px 0 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tmdb-logo { height: 16px; width: auto; vertical-align: middle; opacity: 0.85; }
+/* TMDB brand guidelines forbid altering the logo's colour — keep it at full
+   opacity and its native aspect ratio (height set, width auto). */
+.tmdb-logo { height: 16px; width: auto; vertical-align: middle; }
 .import-row { margin: 8px 0 0; }
 .lb-help { margin: 6px 0 0; }
 .lb-help summary { cursor: pointer; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; width: fit-content; }
