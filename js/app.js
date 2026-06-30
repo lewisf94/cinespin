@@ -901,11 +901,19 @@ function renderFilmCard() {
     const spinner = state.members.find((m) => m.id === spinnerId);
     const isMe = spinnerId === myId;
     const name = spinner?.name || "someone";
+    const wCount = wheelMovies().length;
+    const canSpin = wCount >= 2;
+    const btnLabel = canSpin ? "Go to the wheel" : wCount === 1 ? "Add more films to the wheel" : "Add films to the wheel";
+    const subtext = wCount === 0
+      ? "No films on the wheel yet — add some to get started."
+      : wCount === 1
+        ? "Add at least one more film before you can spin."
+        : isMe ? "Head to the wheel and give it a spin." : "Sit tight, or add more films to the wheel.";
     card.innerHTML = `
       <div class="film-banner">No film picked yet</div>
       <h1 class="film-title">${isMe ? "It's your turn to spin" : `It's ${esc(name)}'s turn to spin`}</h1>
-      <p class="muted">${isMe ? "Head to the wheel and give it a spin." : "Sit tight, or add more films to the wheel."}</p>
-      <button class="btn ${isMe ? "primary" : ""}" id="goto-wheel">Go to the wheel</button>
+      <p class="muted">${subtext}</p>
+      <button class="btn ${isMe || !canSpin ? "primary" : ""}" id="goto-wheel">${btnLabel}</button>
     `;
     $("#goto-wheel").addEventListener("click", () => switchTab("wheel"));
   }
