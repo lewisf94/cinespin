@@ -1231,6 +1231,7 @@ function renderMoviesTab() {
       if (hits.length) meta = (await getDetails(hits[0].tmdbId)) || hits[0];
     }
     await addMovie(state.code, t, meta);
+    if (meta?.tmdbId) renderRecommendations(meta);
   };
   $("#add-movie-btn").addEventListener("click", () => addNow());
   input.addEventListener("keydown", (e) => e.key === "Enter" && addNow());
@@ -1248,13 +1249,11 @@ function renderMoviesTab() {
     reader.readAsText(file);
   });
 
-  // "More like…" recommendations, based on the current/most-recent film.
+  // "More like…" recommendations, based on the most recently added film.
   if (tmdbEnabled) {
-    const cf = state.group?.currentFilm;
-    const cur = cf && state.movies.find((m) => m.id === cf.movieId);
-    const base = (cur && cur.tmdbId) ? cur
-      : state.movies.filter((m) => m.status === "watched" && m.tmdbId)
-          .sort((a, b) => ms(b.watchedAt, 0) - ms(a.watchedAt, 0))[0];
+    const base = state.movies
+      .filter((m) => m.tmdbId)
+      .sort((a, b) => ms(b.addedAt, 0) - ms(a.addedAt, 0))[0];
     if (base) renderRecommendations(base);
   }
 }
