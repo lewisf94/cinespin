@@ -1655,23 +1655,26 @@ function recapHtml() {
   const ratings = state.ratings;
   const titleOf = Object.fromEntries(state.movies.map((m) => [m.id, m.title]));
   const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  const sd = (a) => {
+    if (a.length < 2) return 0;
+    const m = mean(a);
+    return Math.sqrt(mean(a.map((x) => (x - m) ** 2)));
+  };
 
-  const scoresFor = {}, givenBy = {};
-  ratings.forEach((r) => {
-    (scoresFor[r.movieId] ||= []).push(r.score);
-    if (r.score > 0) (givenBy[r.memberId] ||= []).push(r.score);
-  });
-  const board = watched
-    .map((m) => ({ title: m.title, a: mean(scoresFor[m.id] || []), n: (scoresFor[m.id] || []).length }))
-    .filter((m) => m.n).sort((x, y) => y.a - x.a);
+  const scoresFor = {};
+  ratings.forEach((r) => { (scoresFor[r.movieId] ||= []).push(r.score); });
+
   const totalMins = watched.reduce((s, m) => s + (typeof m.runtime === "number" ? m.runtime : 0), 0);
-  const genreCounts = {};
-  watched.forEach((m) => (m.genres || []).forEach((g) => (genreCounts[g] = (genreCounts[g] || 0) + 1)));
-  const topGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0];
-  const raters = members
-    .map((m) => ({ name: m.name || "Someone", a: mean(givenBy[m.id] || []), n: (givenBy[m.id] || []).length }))
-    .filter((r) => r.n);
-  const generous = raters.length ? raters.reduce((a, b) => (b.a > a.a ? b : a)) : null;
+
+  // Film everyone agreed on most vs most divisive (needs ≥2 raters).
+  const filmStats = watched
+    .map((m) => ({ title: m.title, scores: scoresFor[m.id] || [] }))
+    .filter((m) => m.scores.length >= 2)
+    .map((m) => ({ title: m.title, a: mean(m.scores), sd: sd(m.scores) }));
+  const mostAgreed = filmStats.length ? filmStats.slice().sort((a, b) => a.sd - b.sd)[0] : null;
+  const mostDivisive = filmStats.length ? filmStats.slice().sort((a, b) => b.sd - a.sd)[0] : null;
+
+  // Each member's personal highest-rated film.
   const favs = members.map((m) => {
     const mine = ratings.filter((r) => r.memberId === m.id && r.score > 0);
     if (!mine.length) return null;
@@ -1679,15 +1682,56 @@ function recapHtml() {
     return { name: m.name || "Someone", title: titleOf[top.movieId] || "a film", score: top.score };
   }).filter(Boolean);
 
-  return `
-    <h2 id="recap-modal-title">CineClub recap</h2>
-    <p class="recap-big">${watched.length} film${watched.length === 1 ? "" : "s"}${totalMins ? ` &middot; ${fmtRuntime(totalMins)} watched` : ""}</p>
-    ${topGenre ? `<p class="muted">Most-watched genre: <b>${esc(topGenre[0])}</b></p>` : ""}
-    ${board[0] ? `<p><b>Top rated:</b> ${esc(board[0].title)} <span class="muted">(${fmt2(board[0].a)}★)</span></p>` : ""}
-    ${board.length > 1 ? `<p><b>Lowest rated:</b> ${esc(board[board.length - 1].title)} <span class="muted">(${fmt2(board[board.length - 1].a)}★)</span></p>` : ""}
-    ${generous ? `<p><b>Most generous critic:</b> ${esc(generous.name)} <span class="muted">(${fmt2(generous.a)} avg)</span></p>` : ""}
-    ${favs.length ? `<h3>Everyone's favourite</h3><ul class="recap-favs">${favs.map((f) => `<li>${esc(f.name)}: <b>${esc(f.title)}</b> ${f.score}★</li>`).join("")}</ul>` : ""}
-    <p class="muted small">A snapshot of the club so far.</p>`;
+  // Biggest single contrarian moment across the whole club.
+  let moment = null;
+  members.forEach((m) => {
+    ratings.filter((r) => r.memberId === m.id).forEach((r) => {
+      const others = ratings.filter((x) => x.movieId === r.movieId && x.memberId !== m.id);
+      if (!others.length) return;
+      const groupAvg = mean(others.map((x) => x.score));
+      const gap = r.score - groupAvg;
+      if (!moment || Math.abs(gap) > Math.abs(moment.gap)) {
+        moment = { name: m.name || "Someone", title: titleOf[r.movieId] || "a film", mine: r.score, group: groupAvg, gap };
+      }
+    });
+  });
+
+  // Who added the most films overall.
+  const addCounts = {};
+  state.movies.forEach((m) => { if (m.addedByMemberId) addCounts[m.addedByMemberId] = (addCounts[m.addedByMemberId] || 0) + 1; });
+  const topAdder = members
+    .map((m) => ({ name: m.name || "Someone", n: addCounts[m.id] || 0 }))
+    .filter((m) => m.n > 0)
+    .sort((a, b) => b.n - a.n)[0] || null;
+
+  let html = `<h2 id="recap-modal-title">CineClub recap</h2>
+    <p class="recap-big">${watched.length} film${watched.length === 1 ? "" : "s"} watched${totalMins ? ` &middot; ${fmtRuntime(totalMins)} of your lives` : ""}</p>`;
+
+  if (favs.length) {
+    html += `<h3 class="recap-section">Everyone's favourite</h3><ul class="recap-favs">`;
+    favs.forEach((f) => { html += `<li><b>${esc(f.name)}</b> — ${esc(f.title)} <span class="muted">${f.score}★</span></li>`; });
+    html += `</ul>`;
+  }
+
+  if (mostAgreed || mostDivisive) {
+    html += `<h3 class="recap-section">The verdict</h3>`;
+    if (mostAgreed) html += `<p><b>Everyone agreed on:</b> ${esc(mostAgreed.title)} <span class="muted small">(${fmt2(mostAgreed.a)}★, ±${fmt2(mostAgreed.sd)} spread)</span></p>`;
+    if (mostDivisive && mostDivisive.title !== mostAgreed?.title) html += `<p><b>Couldn't agree on:</b> ${esc(mostDivisive.title)} <span class="muted small">(${fmt2(mostDivisive.a)}★, ±${fmt2(mostDivisive.sd)} spread)</span></p>`;
+  }
+
+  if (moment && Math.abs(moment.gap) >= 1) {
+    const dir = moment.gap > 0 ? "rated it higher than anyone" : "wasn't as convinced";
+    html += `<h3 class="recap-section">Contrarian moment</h3>
+      <p><b>${esc(moment.name)}</b> ${dir}: gave <b>${esc(moment.title)}</b> ${fmt2(moment.mine)}★ while the rest averaged ${fmt2(moment.group)}★</p>`;
+  }
+
+  if (topAdder) {
+    html += `<h3 class="recap-section">Top contributor</h3>
+      <p><b>${esc(topAdder.name)}</b> added the most films to the wheel — ${topAdder.n} in total.</p>`;
+  }
+
+  html += `<p class="muted small recap-note">A snapshot of the club so far — full stats are on the Stats tab.</p>`;
+  return html;
 }
 
 function posterThumb(m, size = "w92") {

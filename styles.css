@@ -310,8 +310,10 @@ a:focus-visible, input:focus-visible, textarea:focus-visible,
 .activity li:first-child { border-top: none; }
 .recap-cta { margin-bottom: 16px; }
 .recap-big { font-size: 1.3rem; font-weight: 700; margin: 4px 0 10px; }
-.recap-favs { margin: 8px 0 0; padding-left: 18px; }
-.recap-favs li { margin: 3px 0; }
+.recap-section { margin: 20px 0 6px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; }
+.recap-favs { margin: 6px 0 0; padding-left: 18px; }
+.recap-favs li { margin: 4px 0; }
+.recap-note { margin-top: 20px; }
 .comments { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
 .cmt-h { margin: 0 0 8px; font-size: 0.95rem; }
 .cmt-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
