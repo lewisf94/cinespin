@@ -789,7 +789,7 @@ function render() {
   if (state.tab === "wheel") renderWheelTab();
   else if (state.tab === "movies") { if (!editingWithin($("#tab-movies"))) renderMoviesTab(); }
   else if (state.tab === "history") { if (!editingWithin($("#tab-history"))) renderHistoryTab(); }
-  else if (state.tab === "stats") { renderStats($("#tab-stats"), state.movies, state.ratings, orderedMembers()); appendRecapButton($("#tab-stats")); appendResetControl($("#tab-stats")); }
+  else if (state.tab === "stats") { const sc = $("#tab-stats"); renderStats(sc, state.movies, state.ratings, orderedMembers()); appendStatsRecs(sc); appendRecapButton(sc); appendResetControl(sc); }
 
   maybePlaySpin(state.group?.lastSpin);
 }
@@ -1370,6 +1370,68 @@ async function renderRecommendations(base) {
       await addMovie(state.code, r.title, details || r);
     })
   );
+}
+
+// Personalised recs for the stats tab: fetch suggestions based on the current
+// member's top-rated films and append them as a card below the other stats.
+async function appendStatsRecs(container) {
+  if (!tmdbEnabled) return;
+  const myId = getMemberId();
+  const movieById = Object.fromEntries(state.movies.map((m) => [m.id, m]));
+
+  // Take the member's top-scored films that have a TMDB id, up to 3 seeds.
+  const seeds = [...state.ratings]
+    .filter((r) => r.memberId === myId)
+    .sort((a, b) => b.score - a.score)
+    .map((r) => movieById[r.movieId])
+    .filter((m) => m && m.tmdbId)
+    .slice(0, 3);
+
+  if (!seeds.length) return;
+
+  // Films already in the club (on wheel or watched) — exclude from suggestions.
+  const have = new Set();
+  state.movies.forEach((m) => {
+    if (m.tmdbId) have.add(String(m.tmdbId));
+    have.add((m.title || "").toLowerCase());
+  });
+
+  // Fetch recs for each seed in parallel, then merge and deduplicate.
+  const allRecs = await Promise.all(seeds.map((m) => getRecommendations(m.tmdbId, 10)));
+  const seen = new Set();
+  const list = [];
+  for (const recs of allRecs) {
+    for (const r of recs) {
+      if (!have.has(String(r.tmdbId)) && !have.has((r.title || "").toLowerCase()) && !seen.has(r.tmdbId)) {
+        seen.add(r.tmdbId);
+        list.push(r);
+        if (list.length >= 6) break;
+      }
+    }
+    if (list.length >= 6) break;
+  }
+
+  if (!list.length || !container.isConnected) return;
+
+  const basedOn = seeds.map((m) => m.title).join(", ");
+  const card = document.createElement("div");
+  card.className = "card stats-recs";
+  card.innerHTML = `<h3>Suggested for you</h3>
+    <p class="muted small">Based on your ratings of <em>${esc(basedOn)}</em></p>
+    <div class="rec-grid">${list.map((r, i) => `<button class="rec" data-rec="${i}" title="Add to wheel">
+      ${r.posterPath ? `<img class="rec-poster" src="${esc(posterUrl(r.posterPath, "w92"))}" alt="" loading="lazy" />` : `<span class="rec-poster empty"></span>`}
+      <span class="rec-title">${esc(r.title)}${r.year ? ` <span class="muted small">(${esc(r.year)})</span>` : ""}</span>
+      <span class="rec-add">+ Add</span>
+    </button>`).join("")}</div>`;
+  card.querySelectorAll(".rec").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const r = list[+b.dataset.rec];
+      b.disabled = true;
+      const details = await getDetails(r.tmdbId);
+      await addMovie(state.code, r.title, details || r);
+    })
+  );
+  container.appendChild(card);
 }
 
 // Build a where-to-watch / who-can-watch label from a film's provider data.
