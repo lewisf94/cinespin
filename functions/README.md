@@ -4,9 +4,13 @@ By default CineClub runs **without** these — the static site talks straight to
 Firestore and the round/turn/reset invariants are trusted to the client (fine
 for a friendly club). Deploying these makes those invariants **server-enforced**
 instead: the turn passes only when everyone has watched and rated, a reset
-happens only on unanimous approval, you can only mark *yourself* watched, and
-only the current spinner can spin. The static front end stays no-build; this is
-a separate, optional backend.
+happens only on unanimous approval, you can only mark *yourself* watched, only
+the current spinner can spin or start a vote, a vote resolves to whoever the
+ballots actually favour (tallied server-side, not trusted from whichever
+client's browser happens to commit it), and only the actual club admin can
+remove a member (the client-trusted mode only hides the kick button from
+non-admins in the UI — this mode enforces it). The static front end stays
+no-build; this is a separate, optional backend.
 
 **Requires the Blaze (pay-as-you-go) plan.** Cloud Functions aren't available on
 the free Spark plan. Blaze still has a generous free monthly allowance; a small
@@ -16,7 +20,7 @@ club will almost certainly stay within it.
 
 | File | What it is |
 |------|-----------|
-| `index.js` | The callable functions (`commitSpin`, `setDeadline`, `markWatched`, `finalizeRound`, `requestReset`, `approveReset`, `cancelReset`) **plus** the scheduled `sendDeadlineReminders` (Web Push) |
+| `index.js` | The callable functions (`commitSpin`, `setDeadline`, `markWatched`, `finalizeRound`, `startVote`, `submitBallot`, `cancelVote`, `commitVoteWinner`, `voteRemoveMovie`, `setMovieServices`, `kickMember`, `requestReset`, `approveReset`, `cancelReset`) **plus** the scheduled `sendDeadlineReminders` (Web Push) |
 | `package.json` | Node 20, `firebase-admin` + `firebase-functions` |
 | `firestore.rules` | **Hardened** rules to publish *after* this is live (clients can no longer write the shared state directly) |
 
@@ -67,17 +71,9 @@ Scheduled functions need the Blaze plan.
 > Order matters: deploy functions (5) → flip the flag + redeploy site (6) →
 > publish hardened rules (7). If you publish the hardened rules before the
 > functions/flag are live, spinning/finishing/resetting will fail until you do.
-
-> **Known gap — the vote feature is not server-authoritative yet.** The approval
-> **vote** (start vote / submit ballot / cancel / commit winner), the **vote-to-
-> remove** a wheel film, and the club **"where to watch" override** were added
-> after these functions and have **no callable** — they still write Firestore
-> directly and don't check `useFunctions`. The hardened rules forbid exactly
-> those writes (`vote`/`currentFilm` are function-only; movie updates are denied),
-> so turning this mode on **silently breaks voting, vote-to-remove, and the
-> service override**. Until functions are added for them (ROADMAP), either stay in
-> client-trusted mode if your club uses voting, or accept those features being
-> disabled under server-authoritative mode.
+> This now also covers voting/vote-to-remove/service-override (see below) — test
+> those in the emulator too: start a vote, submit ballots from a couple of
+> members, close it, vote a wheel film off, and correct a film's streaming info.
 
 ## Turn it off
 

@@ -91,14 +91,8 @@ need **publishing** in the console). **[console]** = your action, no code.
 - [ ] **SH-7. TMDB v3 key is embedded in the client** — abusable against your key's quota;
   v3 keys can't be domain-locked. Standard for client TMDB apps; proxy via a Function only
   if it's ever abused. Low. (Plus P0 #6: optional HTTP-referrer restriction on the API key.)
-- [ ] **SH-9. Vote feature isn't server-authoritative (latent break).** `startVote`,
-  `submitBallot`, `cancelVote`, `commitVoteWinner`, `voteRemoveMovie` and `setMovieServices`
-  write Firestore directly and don't branch on `useFunctions` — but the hardened rules forbid
-  exactly those writes. So enabling server-authoritative mode **silently breaks voting,
-  vote-to-remove, and the where-to-watch override**. Fix: add callables for `commitVoteWinner`
-  (it sets `currentFilm` — must stay function-gated) and relax the hardened rules for the
-  low-stakes poll/`removeVotes`/`serviceOverride` writes. Documented in `functions/README.md`
-  + `ARCHITECTURE.md`; no impact in the default client-trusted mode.
+- [x] **SH-9. Vote feature isn't server-authoritative (latent break).** Fixed —
+  see **R-4** below.
 
 > **Publish step:** SH-2/4/6/8 are in the rules files but **don't auto-deploy**. Test in the
 > Firebase Emulator, then paste `firestore.rules` (or `functions/firestore.rules` in
@@ -196,6 +190,142 @@ need **publishing** in the console). **[console]** = your action, no code.
   top genres, films by decade) that appears on the Stats tab only once watched films carry TMDB
   metadata (#14). Degrades to nothing when absent. (`js/stats.js`.)
 - [ ] 21. Nice-to-have: live lobby/presence, per-film discussion threads, season recap.
+
+---
+
+## UI / UX / performance / security review (2026-07)
+
+A pass over the whole app (not backend-only). Checked = shipped.
+
+### Security
+- [x] **R-1. XSS via unescaped `memberId` in kick buttons.** `renderWheelTab`/
+  `renderVoting` in `app.js` built `data-kick="${m.id}"` without `esc()`. A member's
+  id is attacker-controlled (it's whatever they had in `localStorage` when they
+  joined, and the join rule lets them append any string), so a hostile joiner could
+  plant HTML/JS that runs in the admin's browser when the turn-order chips render.
+  Fixed: escaped everywhere `m.id`/`b.dataset.kick` render into HTML.
+- [x] **R-2. No Subresource Integrity on the confetti CDN script.** `index.html`
+  loaded `canvas-confetti` from jsDelivr with no `integrity` hash — a compromised
+  CDN/package would run arbitrary JS with full access to the page (including the
+  Firebase session). Fixed by **vendoring the library** (`js/vendor/confetti.browser.js`,
+  ISC-licensed, from the npm package) instead of SRI-pinning the CDN: no
+  third-party request at all, version-pinned by being in the repo, and it rides
+  along in the service-worker precache (works offline, same-origin GET).
+  - **R-2b (bonus).** Same tag also blocked HTML parsing (no `defer`) for a library
+    only needed ~11s into a spin. Added `defer`.
+- [ ] **R-3. Guessable 5-char club codes let any signed-in user join silently.**
+  Same root cause as **SH-3** above, but the concrete fix agreed with Lewis: don't
+  just deny `get`s — require an **existing member to approve** a join before the
+  requester gets into `memberUids`/`memberOrder`. See the new join-approval item
+  below (supersedes SH-3's "deferred").
+  - [x] **Join-approval flow** — joining now creates a `joinRequests/{uid}` doc
+    instead of writing straight into the group; any current member can approve
+    (adds them to the rotation) or decline (deletes the request). Mirrors the
+    existing `resetRequest`/`vote` patterns. Rules updated in both
+    `firestore.rules` and `functions/firestore.rules`. Incidentally also closes
+    the "rejoin with a fresh anonymous identity after being kicked" gap for
+    *silent* rejoin — a fresh identity still needs a member to say yes.
+- [x] **R-4 (= SH-9). Vote features have no Cloud Function, so `useFunctions=true`
+  silently breaks them.** Added six callables to `functions/index.js`:
+  `startVote`/`cancelVote` (spinner-only, mirrors `commitSpin`), `submitBallot`
+  (adds only the caller's own ballot, like `markWatched`), `commitVoteWinner`
+  (the server independently **tallies the ballots itself** rather than trusting
+  whichever client's single-writer-fallback timer fires — unlike the spin, the
+  vote's winner is meaningful, not random), `voteRemoveMovie` (adds only the
+  caller's vote), and `setMovieServices`. Turns out `functions/firestore.rules`
+  needed **no relaxation at all** — it already denied these writes outright
+  (`vote` wasn't in the member-editable field list; movie `update` was fully
+  `false`), so the fix was purely additive on the Functions side, and the round
+  state is now MORE fully server-authoritative than before, not just patched.
+  `js/movies.js` branches on `useFunctions` for all six, matching the existing
+  pattern.
+- [x] **R-5. Residual client-trust gaps, reassessed for scale.** Went through
+  each one asked about specifically:
+  - **`kickMember` had no Cloud Function at all** (newly found while doing this
+    review, same bug class as R-4/SH-9) — the client's kick transaction
+    *shrinks* `memberOrder`/`memberUids`, which matches neither the
+    member-editable-fields list nor `amApprovingJoin()`'s grow-by-one shape, so
+    enabling `useFunctions=true` would have **silently broken the admin's kick
+    button**. Fixed: added `exports.kickMember`, and it's a strict upgrade over
+    the client-trusted version — the function actually **checks the caller is
+    the admin** server-side (the default mode only hides the kick button from
+    non-admins in the UI; any member could otherwise call it). `js/groups.js`
+    now branches on `useFunctions`.
+  - **Movie/rating over-delete** (any member can delete any movie/rating, not
+    just their own) is **already fully closed by `useFunctions=true`**: hardened
+    ratings are `allow delete: if false` (only the reset function deletes them,
+    via Admin SDK), and the reset function's Admin SDK batch-delete doesn't rely
+    on the client-facing movie/rating delete rules at all. The one part hardened
+    mode does **not** yet add real enforcement to: a wheel movie's `delete` stays
+    `isMember(code)` (any member) even in hardened mode, because `removeMovie`
+    (self-remove) and the automatic vote-off removal both need it, and vote-off
+    fires from whichever member's browser notices consensus first, not
+    necessarily the adder. Properly restricting that to "adder, or verified
+    vote-off consensus" needs one more callable (`removeMovie` with a
+    server-side consensus check, mirroring `commitVoteWinner`'s pattern) —
+    scoped out of this pass as a separate, smaller follow-up; noted here rather
+    than left silently unexamined.
+  - **Rejoin after a ban via a fresh anonymous identity**: the join-approval
+    flow (R-3) is the mitigation, not a full close. A kicked member using a new
+    browser profile (fresh uid, not in `bannedUids`) can still file a NEW join
+    request — but now a human member has to say yes to it, where before they
+    could add themselves silently. It's not proof against a determined attacker
+    who picks an unfamiliar display name and a member who doesn't recognise
+    them; fully closing it would need requiring a verified identity (email) for
+    every join, which conflicts with the app's deliberate "no sign-up" design.
+    Documented as an accepted residual risk, not silently ignored.
+  - Turn rotation/finalize/reset invariants generally: client-trusted by design
+    **unless** `useFunctions=true` (P1 #8) — that path is now fully complete
+    (R-4 + the kickMember fix above, both closing the last known gaps in it).
+    Recommendation for "ready to scale": deploy `functions/` and flip the flag
+    once the club count/stakes justify the Blaze plan; until then this is an
+    accepted trade-off for a free, backend-optional app, not an oversight.
+
+### Performance
+- [x] **R-6. `favicon.svg` was 796 KB** (a base64 PNG wrapped in an SVG shell, no
+  actual vector content) — loaded on every page **and** precached by the service
+  worker. Replaced with the existing 13 KB adaptive PNG icon everywhere; removed
+  from `sw.js`'s `SHELL` and bumped the cache version.
+- [x] **R-7. No Firestore offline persistence.** The service worker only cached
+  the app *shell* — opening off-network showed an empty club. Added
+  `persistentLocalCache` so the last-synced club data is available instantly
+  (and offline).
+- [x] **R-8. Sequential (not parallel) TMDB provider look-ups.** `fillWheelAvailability`
+  / `ensureCoverage` / `fillAutocompleteAvailability` awaited one film at a time in
+  a loop — a 20-film wheel meant 20 serial round trips. Batched with `Promise.all`.
+- [x] **R-9. Stats-tab "Suggested for you" re-fetched on every render, uncached,
+  with a duplicate-card race.** Two overlapping renders could each append a
+  recommendations card. Cached by seed signature; guarded against double-append.
+- [x] **R-10. Four Google Font families/many weights loaded unconditionally**,
+  including two (`Pixelify Sans`, `Playfair Display`) only used by the Web 1.0
+  theme most users never switch to. Trimmed the requested weights to what
+  `styles.css` actually uses.
+
+### UX
+- [x] **R-11. `window.prompt()` for the cross-device email-link confirmation.**
+  Jarring next to the app's own modals and unbranded inside an installed PWA.
+  Replaced with an inline field in the existing account modal.
+- [ ] **R-12. Remaining native `confirm()`/`alert()` dialogs** (kick, reset,
+  vote close/cancel, spin failure, the Web 1.0 "About" menu item) still use
+  browser-native dialogs. Left as-is for now — lower priority than R-11 since
+  none of them block a cross-device flow; revisit if it bothers you in practice.
+- [x] **R-13. Modals didn't trap focus or restore it on close.** Tab could walk
+  out of an open dialog into the page behind it, and closing never returned
+  focus to the button that opened it. Added a shared focus-trap/restore helper
+  used by all six modals.
+- [x] **R-14. Inconsistent review/comment length limits** — review textarea
+  capped at 500 chars, comment input at 1000, but the rules allow 2000 for both.
+  Raised both client maxlengths to 2000 to match.
+
+### UI
+- [x] **R-15. Small destructive tap targets on mobile** — "Vote off" / "Remove" /
+  the kick `×` / comment "delete" were small text buttons with no padding.
+  Enlarged the hit area (padding, not font-size) to a ~44px minimum.
+- [ ] **R-16. Dark-mode contrast spot-check (festival/strokes).** Reviewed the
+  `muted`/`small` text colours against `--bg-soft` in both dark themes by
+  computing contrast ratios from the CSS variables; all combinations currently
+  in use clear WCAG AA (4.5:1) for normal text. No change needed — noting here
+  so it isn't re-litigated without new data.
 
 ---
 

@@ -2,7 +2,7 @@
 //  CineClub — app orchestration: routing, live data, rendering, actions
 // ============================================================================
 
-import { isConfigured, db, doc, collection, onSnapshot } from "./firebase.js";
+import { isConfigured, db, doc, collection, onSnapshot, getDoc } from "./firebase.js";
 import {
   ensureAuth, getName, setName, getMemberId, getUid, getLastGroup, setLastGroup,
   isAccountSaved, getAccountEmail, sendAccountLink, isEmailSignInLink, completeEmailLinkSignIn,
@@ -10,6 +10,7 @@ import {
 import {
   createGroup, joinGroup, currentSpinnerId, normaliseCode,
   requestReset, approveReset, cancelReset, performReset, setMyServices, kickMember, setStreamFilter, setWheelCap,
+  approveJoinRequest, declineJoinRequest, cancelJoinRequest,
 } from "./groups.js";
 import { addMovie, removeMovie, commitSpin, markWatchedAck, finalizeRound, setDeadline, setMovieServices, voteRemoveMovie, postComment, deleteComment, startVote, submitBallot, cancelVote, commitVoteWinner, refreshMovieTmdbMeta } from "./movies.js";
 import {
@@ -22,8 +23,48 @@ import { tmdbEnabled, TMDB_STATEMENT, searchTitles, getDetails, getMovieDetail, 
 
 // ---- tiny helpers ----------------------------------------------------------
 const $ = (sel) => document.querySelector(sel);
-const show = (el) => el && el.classList.remove("hidden");
-const hide = (el) => el && el.classList.add("hidden");
+// show()/hide() also drive focus for the six .modal dialogs (name/movie/import/
+// recap/providers/account): trap Tab inside the open dialog and restore focus to
+// whatever opened it on close, instead of leaving focus stranded in the page
+// behind it. Every other show/hide target (screens, banners, chips…) is
+// unaffected — this only activates for elements carrying the "modal" class.
+const show = (el) => { if (el) { el.classList.remove("hidden"); if (el.classList.contains("modal")) trapModalFocus(el); } };
+const hide = (el) => { if (el) { el.classList.add("hidden"); if (el.classList.contains("modal")) releaseModalFocus(el); } };
+
+function focusableIn(box) {
+  return [...box.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter((n) => n.offsetParent !== null);
+}
+
+let trappedModal = null;
+let modalReturnFocus = null;
+let modalKeydownHandler = null;
+function trapModalFocus(el) {
+  trappedModal = el;
+  modalReturnFocus = document.activeElement;
+  const box = el.querySelector(".modal-box") || el;
+  if (!box.hasAttribute("tabindex")) box.setAttribute("tabindex", "-1");
+  const focusables = focusableIn(box);
+  (focusables[0] || box).focus({ preventScroll: true });
+  modalKeydownHandler = (e) => {
+    if (e.key !== "Tab") return;
+    const items = focusableIn(box);
+    if (!items.length) { e.preventDefault(); return; }
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  el.addEventListener("keydown", modalKeydownHandler);
+}
+function releaseModalFocus(el) {
+  if (trappedModal !== el) return; // a hide() on a modal that was never the open one
+  if (modalKeydownHandler) el.removeEventListener("keydown", modalKeydownHandler);
+  modalKeydownHandler = null;
+  trappedModal = null;
+  if (modalReturnFocus && document.body.contains(modalReturnFocus)) modalReturnFocus.focus({ preventScroll: true });
+  modalReturnFocus = null;
+}
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
@@ -56,6 +97,7 @@ const state = {
   movies: [],
   ratings: [],
   comments: [],
+  joinRequests: [],
   tab: "wheel",
   unsub: [],
 };
@@ -99,7 +141,7 @@ async function init() {
   // the recovered uid is in place when we join (and can reclaim our seat).
   if (isEmailSignInLink()) {
     try {
-      await completeEmailLinkSignIn(() => window.prompt("Confirm your email to finish signing in:"));
+      await completeEmailLinkSignIn(promptEmailForSignIn);
     } catch (e) {
       console.error("Email-link sign-in failed:", e);
     }
@@ -113,8 +155,9 @@ async function init() {
   const code = normaliseCode(params.get("g")) || getLastGroup();
   if (code) {
     try {
-      await joinGroup(code);
-      attachGroup(code);
+      const result = await joinGroup(code);
+      if (result.pending) showPendingApproval(result.code, result.uid);
+      else attachGroup(code);
     } catch (_) {
       setLastGroup(null);
       showLanding();
@@ -137,7 +180,10 @@ function wireStaticUI() {
   $("#name-save").addEventListener("click", saveName);
   $("#name-input").addEventListener("keydown", (e) => e.key === "Enter" && saveName());
   $("#account-btn").addEventListener("click", openAccountModal);
-  $("#account-close").addEventListener("click", () => hide($("#account-modal")));
+  $("#account-close").addEventListener("click", () => {
+    hide($("#account-modal"));
+    if (emailPromptResolve) { emailPromptResolve(null); emailPromptResolve = null; }
+  });
   wireProvidersModal();
   wireImportModal();
   $("#movie-modal-close").addEventListener("click", closeMovieModal);
@@ -155,12 +201,21 @@ function wireStaticUI() {
       closeProvidersModal();
     } else if (!$("#account-modal").classList.contains("hidden")) {
       hide($("#account-modal"));
+      if (emailPromptResolve) { emailPromptResolve(null); emailPromptResolve = null; }
     } else if (!$("#name-modal").classList.contains("hidden")) {
       hide($("#name-modal"));
       if (namePromiseResolve) { namePromiseResolve(); namePromiseResolve = null; }
     }
   });
   $("#leave-btn").addEventListener("click", leaveGroup);
+  $("#pending-cancel").addEventListener("click", async () => {
+    const code = pendingCode, uid = pendingUid;
+    teardownPending();
+    setLastGroup(null);
+    hide($("#screen-pending"));
+    showLanding();
+    if (code && uid) { try { await cancelJoinRequest(code, uid); } catch (_) {} }
+  });
 
   // Mobile: the right-hand utility chips collapse behind the "Menu" button.
   const menuBtn = $("#menu-btn");
@@ -252,6 +307,7 @@ function wireStaticUI() {
       if (namePromiseResolve) { namePromiseResolve(); namePromiseResolve = null; }
     } else if (win.closest("#account-modal")) {
       hide($("#account-modal"));
+      if (emailPromptResolve) { emailPromptResolve(null); emailPromptResolve = null; }
     } else if (win.classList.contains("reset-box")) {
       if (state.code) cancelReset(state.code);
     }
@@ -336,6 +392,10 @@ async function saveName() {
   $("#who-am-i").textContent = v;
   if (state.code) {
     try { await joinGroup(state.code); } catch (_) {}
+  } else if (pendingCode) {
+    // Refresh the name on our still-pending join request too, so whoever
+    // approves it sees the name we actually go by.
+    try { await joinGroup(pendingCode); } catch (_) {}
   }
   if (namePromiseResolve) {
     namePromiseResolve();
@@ -348,6 +408,34 @@ async function saveName() {
 function openAccountModal() {
   renderAccountBody();
   show($("#account-modal"));
+}
+
+// Cross-device email-link sign-in sometimes needs the address re-confirmed (the
+// address is normally remembered in localStorage on the device that requested
+// the link, but not if it's opened somewhere else). Reuses the account modal
+// instead of window.prompt() — resolves with the entered email, or null if the
+// user closes the modal without one (matches prompt()'s cancel behaviour).
+let emailPromptResolve = null;
+function promptEmailForSignIn() {
+  const body = $("#account-body");
+  body.innerHTML = `
+    <h2>Confirm your email</h2>
+    <p class="muted">You opened a sign-in link on a different browser or device than you
+      requested it from. Enter that email address to finish signing in.</p>
+    <input id="email-confirm-input" type="email" placeholder="you@example.com" autocomplete="email" />
+    <button id="email-confirm-btn" class="btn primary">Continue</button>`;
+  show($("#account-modal"));
+  const input = $("#email-confirm-input");
+  input.focus();
+  const submit = () => {
+    const v = input.value.trim();
+    if (!v) { input.focus(); return; }
+    hide($("#account-modal"));
+    if (emailPromptResolve) { emailPromptResolve(v); emailPromptResolve = null; }
+  };
+  $("#email-confirm-btn").addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => e.key === "Enter" && submit());
+  return new Promise((resolve) => (emailPromptResolve = resolve));
 }
 
 function renderAccountBody() {
@@ -473,6 +561,51 @@ function attachGroup(code) {
   subscribe(code);
 }
 
+// ---- waiting for an existing member to approve a join request -------------
+let pendingUnsub = [];
+let pendingCode = null;
+let pendingUid = null;
+function teardownPending() {
+  pendingUnsub.forEach((u) => { try { u(); } catch (_) {} });
+  pendingUnsub = [];
+  pendingCode = null;
+  pendingUid = null;
+}
+
+function showPendingApproval(code, uid) {
+  teardownSubs();
+  teardownPending();
+  pendingCode = code;
+  pendingUid = uid;
+  state.code = null;
+  setLastGroup(code); // resume watching this same request if the page reloads
+  hide($("#screen-landing"));
+  hide($("#screen-app"));
+  show($("#screen-pending"));
+
+  // The join request doc is the single source of truth for how this resolves:
+  // once it's gone, re-read the group doc to tell approved (our uid is now in
+  // memberUids) from declined (it isn't) apart — checking at read-time instead
+  // of trusting listener-arrival order, since the approval transaction updates
+  // both documents together and either snapshot could land first.
+  pendingUnsub.push(
+    onSnapshot(doc(db, "groups", code, "joinRequests", uid), async (snap) => {
+      if (snap.exists()) return; // still pending
+      const g = await getDoc(doc(db, "groups", code)).catch(() => null);
+      const approved = !!(g && g.exists() && (g.data().memberUids || []).includes(uid));
+      teardownPending();
+      if (approved) {
+        attachGroup(code);
+      } else {
+        setLastGroup(null);
+        hide($("#screen-pending"));
+        showLanding();
+        $("#landing-error").textContent = "Your request to join wasn't approved.";
+      }
+    })
+  );
+}
+
 // Tear down the club, drop the URL/last-group, and return to landing. `message`
 // (if any) is shown on the landing screen — used when we were kicked, not when
 // we left voluntarily.
@@ -487,6 +620,7 @@ function ejectFromClub(message) {
   state.movies = [];
   state.ratings = [];
   state.comments = [];
+  state.joinRequests = [];
   showLanding();
   if (message) $("#landing-error").textContent = message;
 }
@@ -529,8 +663,9 @@ async function handleJoin(raw) {
   if (!code) return;
   if (!getName()) { await promptName(); if (!getName()) return; }
   try {
-    await joinGroup(code);
-    attachGroup(code);
+    const result = await joinGroup(code);
+    if (result.pending) showPendingApproval(result.code, result.uid);
+    else attachGroup(code);
   } catch (e) {
     $("#landing-error").textContent = friendlyConnMessage(e) || e.message;
   }
@@ -609,6 +744,15 @@ function subscribe(code) {
   state.unsub.push(
     onSnapshot(collection(db, "groups", code, "comments"), (snap) => {
       state.comments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      scheduleRender();
+    }, onSubErr)
+  );
+  // Pending join requests — visible to members only (readable via isMember()),
+  // so a permission-denied here just means "not a member," same as the other
+  // subcollections; onSubErr already handles that via checkKicked().
+  state.unsub.push(
+    onSnapshot(collection(db, "groups", code, "joinRequests"), (snap) => {
+      state.joinRequests = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       scheduleRender();
     }, onSubErr)
   );
@@ -762,6 +906,8 @@ function render() {
   } else {
     finalizingId = null;
   }
+
+  renderJoinRequestsBanner();
 
   // Group reset: show the consent banner, and wipe once everyone has approved.
   // Same single-writer pattern — the proposer commits; others are the fallback.
@@ -961,7 +1107,7 @@ function renderWheelTab() {
     .map((m) => {
       const admin = m.id === adminId ? `<span class="chip-admin" title="Club admin">admin</span>` : "";
       const kick = iAmAdmin && m.id !== myId
-        ? `<button class="chip-kick" data-kick="${m.id}" data-kick-uid="${esc(m.uid || "")}" title="Remove ${esc(m.name || "member")}" aria-label="Remove ${esc(m.name || "member")}">×</button>`
+        ? `<button class="chip-kick" data-kick="${esc(m.id)}" data-kick-uid="${esc(m.uid || "")}" title="Remove ${esc(m.name || "member")}" aria-label="Remove ${esc(m.name || "member")}">×</button>`
         : "";
       return `<span class="turn-chip ${m.id === spinnerId ? "current" : ""}">${esc(m.name || "?")}${admin}${kick}</span>`;
     })
@@ -1400,8 +1546,16 @@ async function refreshStaleTmdbMetadata() {
 
 // Personalised recs for the stats tab: fetch suggestions based on the current
 // member's top-rated films and append them as a card below the other stats.
+// Cached by the seed set's signature (module scope survives across renders), and
+// token-guarded so a slow/stale call from an earlier render can't append a
+// duplicate card after a newer render has already redrawn the tab — render()
+// re-fires on every Firestore snapshot while the tab is open, so this async tail
+// can easily overlap itself.
+let statsRecsToken = 0;
+let statsRecsCache = { sig: "", candidates: [] };
 async function appendStatsRecs(container) {
   if (!tmdbEnabled) return;
+  const token = ++statsRecsToken;
   const myId = getMemberId();
   const movieById = Object.fromEntries(state.movies.map((m) => [m.id, m]));
 
@@ -1422,21 +1576,31 @@ async function appendStatsRecs(container) {
     have.add((m.title || "").toLowerCase());
   });
 
-  // Fetch recs for each seed in parallel, then merge and deduplicate.
-  const allRecs = await Promise.all(seeds.map((m) => getRecommendations(m.tmdbId, 10)));
-  const seen = new Set();
-  const list = [];
-  for (const recs of allRecs) {
-    for (const r of recs) {
-      if (!have.has(String(r.tmdbId)) && !have.has((r.title || "").toLowerCase()) && !seen.has(r.tmdbId)) {
-        seen.add(r.tmdbId);
-        list.push(r);
-        if (list.length >= 6) break;
+  // Raw candidate pool is cached by the seed signature (network is the expensive
+  // part); the "already in the club" filter is always re-applied fresh below,
+  // since which films are on the wheel can change without the seeds changing.
+  const sig = seeds.map((m) => m.tmdbId).join(",");
+  let candidates;
+  if (statsRecsCache.sig === sig) {
+    candidates = statsRecsCache.candidates;
+  } else {
+    const allRecs = await Promise.all(seeds.map((m) => getRecommendations(m.tmdbId, 10)));
+    if (token !== statsRecsToken) return; // superseded by a newer render while we awaited
+    const seen = new Set();
+    candidates = [];
+    for (const recs of allRecs) {
+      for (const r of recs) {
+        if (!seen.has(r.tmdbId)) { seen.add(r.tmdbId); candidates.push(r); }
       }
     }
-    if (list.length >= 6) break;
+    statsRecsCache = { sig, candidates };
   }
 
+  const list = candidates
+    .filter((r) => !have.has(String(r.tmdbId)) && !have.has((r.title || "").toLowerCase()))
+    .slice(0, 6);
+
+  if (token !== statsRecsToken) return; // superseded
   if (!list.length || !container.isConnected) return;
 
   const basedOn = seeds.map((m) => m.title).join(", ");
@@ -1485,15 +1649,18 @@ const membersWithServices = () =>
 // film. Runs for every film, services or not, so the info shows up right away.
 async function fillWheelAvailability(movies) {
   const withSvc = membersWithServices();
-  for (const m of movies) {
+  // Fetch every film's providers concurrently (each is independently cached in
+  // filmProviders/providerCache) instead of one round trip at a time — a 20-film
+  // wheel otherwise serialised into 20 sequential requests.
+  await Promise.all(movies.map(async (m) => {
     const data = await filmProviders(m);
     const el = document.querySelector(`.movie-avail[data-mid="${m.id}"]`);
-    if (!el) continue; // tab re-rendered
+    if (!el) return; // tab re-rendered
     const { text, cls, title } = availabilityLabel(data, withSvc);
     el.className = `movie-avail small ${cls}`;
     el.textContent = text;
     el.title = title;
-  }
+  }));
 }
 
 // Same idea for the add-film autocomplete dropdown: show what each result is
@@ -1501,17 +1668,17 @@ async function fillWheelAvailability(movies) {
 // (stale) so we don't write into a rebuilt dropdown.
 async function fillAutocompleteAvailability(results, q, input) {
   const withSvc = membersWithServices();
-  for (let i = 0; i < results.length; i++) {
-    const data = await filmProviders({ tmdbId: results[i].tmdbId });
+  await Promise.all(results.map(async (r, i) => {
+    const data = await filmProviders({ tmdbId: r.tmdbId });
     const box = $("#tmdb-results");
     if (!box || input.value.trim() !== q) return; // user moved on
     const el = box.querySelector(`.tmdb-item-avail[data-ai="${i}"]`);
-    if (!el) continue;
+    if (!el) return;
     const { text, cls, title } = availabilityLabel(data, withSvc);
     el.className = `tmdb-item-avail small ${cls}`;
     el.textContent = text;
     el.title = title;
-  }
+  }));
 }
 
 // ---- where-to-watch correction (club override of stale JustWatch data) ------
@@ -1802,16 +1969,14 @@ async function ensureCoverage(movies) {
   const withSvc = membersWithServices();
   if (!withSvc.length) return;
   const sig = svcSignature();
-  let changed = false;
-  for (const m of movies) {
-    const key = sig + "::" + m.id;
-    if (key in coverageCache) continue;
+  const toFetch = movies.filter((m) => !((sig + "::" + m.id) in coverageCache));
+  if (!toFetch.length) return;
+  await Promise.all(toFetch.map(async (m) => {
     const data = await filmProviders(m);
     const names = (data?.providers || []).map((p) => p.name);
-    coverageCache[key] = names.length ? withSvc.every((mem) => canStream(mem.services, names)) : false;
-    changed = true;
-  }
-  if (changed) scheduleRender();
+    coverageCache[sig + "::" + m.id] = names.length ? withSvc.every((mem) => canStream(mem.services, names)) : false;
+  }));
+  scheduleRender();
 }
 
 // "Where to watch" + "Who can watch" — injected into the film-of-the-week card.
@@ -2081,7 +2246,7 @@ function commentsHtml(movieId, myId) {
       <h4 class="cmt-h">Discussion ${cmts.length ? `<span class="muted small">(${cmts.length})</span>` : ""}</h4>
       <div class="cmt-list">${list || '<p class="muted small">No comments yet — start the conversation.</p>'}</div>
       <div class="cmt-form">
-        <input class="cmt-input" type="text" maxlength="1000" placeholder="Add a comment…" />
+        <input class="cmt-input" type="text" maxlength="2000" placeholder="Add a comment…" />
         <button class="btn small cmt-post">Post</button>
       </div>
     </div>`;
@@ -2110,7 +2275,7 @@ function mountRatingEditor(container, movieId, myId, sealed) {
     <div class="my-rating">
       <div class="small muted">Your rating</div>
       <div class="my-rating-stars"></div>
-      <textarea class="review-input" placeholder="Add a short review or comment…" maxlength="500">${esc(mine?.review || "")}</textarea>
+      <textarea class="review-input" placeholder="Add a short review or comment…" maxlength="2000">${esc(mine?.review || "")}</textarea>
       <div class="muted small spoiler-hint">Wrap spoilers in ||double bars|| to hide them until tapped.</div>
       <button class="btn small save-rating">${mine ? "Update" : "Save"} rating</button>
       <span class="save-note small"></span>
@@ -2130,6 +2295,42 @@ function mountRatingEditor(container, movieId, myId, sealed) {
       ? "Saved — sealed until everyone's in."
       : "Saved.";
   });
+}
+
+// ---- join requests (an existing member must approve a new joiner) ---------
+// See firestore.rules amApprovingJoin(): a brand-new uid can no longer add
+// itself, so it files a request here and ANY current member can approve
+// (adds them to the rotation) or decline (just deletes the request).
+function renderJoinRequestsBanner() {
+  const el = $("#join-requests-banner");
+  if (!el) return;
+  const reqs = state.joinRequests;
+  if (!reqs.length) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+
+  el.classList.remove("hidden");
+  el.innerHTML = `
+    <div class="reset-box">
+      <div class="reset-head">${reqs.length === 1 ? "Someone wants to join" : `${reqs.length} people want to join`}</div>
+      <p class="reset-desc">They won't see any club data until a member lets them in.</p>
+      <ul class="join-req-list">${reqs.map((r) => `
+        <li class="join-req-row">
+          <span class="join-req-name">${esc(r.name || "Someone")}</span>
+          <button class="btn small" data-approve-join="${esc(r.id)}">Let them in</button>
+          <button class="btn small" data-decline-join="${esc(r.id)}">Decline</button>
+        </li>`).join("")}</ul>
+    </div>`;
+
+  el.querySelectorAll("[data-approve-join]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const r = reqs.find((x) => x.id === b.dataset.approveJoin);
+      if (r) approveJoinRequest(state.code, r.uid, r.memberId);
+    })
+  );
+  el.querySelectorAll("[data-decline-join]").forEach((b) =>
+    b.addEventListener("click", () => {
+      if (confirm("Decline this join request?")) declineJoinRequest(state.code, b.dataset.declineJoin);
+    })
+  );
 }
 
 // ---- group reset (unanimous consent) ---------------------------------------

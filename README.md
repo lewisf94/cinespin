@@ -21,7 +21,8 @@ club is in, with stats along the way.
 
 ## How it works
 
-1. **Start a club** (you get a share code) or **join** with a friend's code.
+1. **Start a club** (you get a share code) or **request to join** with a
+   friend's code — an existing member has to let you in before you see anything.
 2. **Add films** to the wheel — each is tagged with who added it.
 3. The person **whose turn it is** (turn order = the order people joined) spins
    the wheel. Everyone watching sees the same spin.
@@ -76,11 +77,15 @@ shared data. You only do this once.
    [`firestore.rules`](./firestore.rules), then click **Publish**.
 
 These rules make each club **private to its members** (the Firebase uids that
-have joined) — nobody can read, edit, or enumerate a club they haven't joined.
-*Upgrading an existing deployment?* Ship the current app code **first** (so
-everyone records a uid by re-joining once), then publish the rules — otherwise
-members without a recorded uid are locked out until they re-join. See the header
-of [`firestore.rules`](./firestore.rules) and `ARCHITECTURE.md`.
+have joined) — nobody can read, edit, or enumerate a club they haven't joined,
+and joining itself now needs an existing member to approve the request (so
+knowing the share code alone isn't enough to get in). *Upgrading an existing
+deployment?* Ship the current app code **first** (so everyone records a uid by
+re-joining once), then publish the rules — otherwise members without a
+recorded uid are locked out until they re-join. Existing members are
+unaffected either way (they're already recognised); the approval step only
+applies to a uid the club has never seen. See the header of
+[`firestore.rules`](./firestore.rules) and `ARCHITECTURE.md`.
 
 ### 5. Turn on Anonymous sign-in
 1. Left menu: **Build → Authentication → Get started**.

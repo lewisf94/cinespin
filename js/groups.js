@@ -74,6 +74,10 @@ export async function createGroup(groupName) {
 }
 
 // Join an existing group by code. Also used to refresh your name on return.
+// Returns { code, pending, uid }: `pending` is true when this is a brand-new
+// uid that just filed a join request and is waiting on an existing member to
+// approve it (see firestore.rules amApprovingJoin) — the caller should show a
+// waiting screen instead of treating this as "in the club" yet.
 export async function joinGroup(rawCode) {
   const code = normaliseCode(rawCode);
   let memberId = getMemberId();
@@ -91,13 +95,17 @@ export async function joinGroup(rawCode) {
     throw new Error("You've been removed from this club.");
   }
 
+  const alreadyMember = !!(uid && (gd.memberUids || []).includes(uid));
+  const order = gd.memberOrder || [];
+
   // Portable identity: if our auth uid already belongs to this club but our
   // local memberId isn't a known seat (e.g. we recovered our account via
   // email-link on a new device or after a cache wipe), reclaim that existing
   // seat instead of creating a duplicate. Normal return visits — where our
-  // memberId is already in the rotation — skip this entirely.
-  const order = snap.data().memberOrder || [];
-  if (uid && (snap.data().memberUids || []).includes(uid) && !order.includes(memberId)) {
+  // memberId is already in the rotation — skip this entirely. This is a
+  // RETURNING member, so it never goes through the join-request/approval path
+  // below (they're already a vetted uid, just on a new device).
+  if (alreadyMember && !order.includes(memberId)) {
     try {
       const mine = await getDocs(
         query(collection(db, "groups", code, "members"), where("uid", "==", uid))
@@ -110,25 +118,61 @@ export async function joinGroup(rawCode) {
     } catch (_) { /* unreadable — proceed as new */ }
   }
 
-  // Upsert our member record (keeps name fresh on every join).
+  // Upsert our member record (keeps name fresh on every join/return visit).
   await setDoc(
     doc(db, "groups", code, "members", memberId),
     { name, uid, joinedAt: serverTimestamp() },
     { merge: true }
   );
 
-  // Append to the rotation + record our auth uid (the membership the security
-  // rules check) only if we're new to this group.
+  if (!alreadyMember) {
+    // Brand-new uid: file a join request instead of adding ourselves to the
+    // rotation — an existing member has to approve it. setDoc (not addDoc) so
+    // re-requesting (e.g. reopening the app while still pending) just refreshes
+    // the same doc instead of piling up duplicates.
+    await setDoc(doc(db, "groups", code, "joinRequests", uid), {
+      uid, memberId, name, requestedAt: serverTimestamp(),
+    });
+    return { code, pending: true, uid };
+  }
+
+  // Returning member: our uid is already trusted — just make sure our seat is
+  // in the turn rotation (a no-op if it already is).
+  await runTransaction(db, async (tx) => {
+    const data = (await tx.get(groupRef)).data() || {};
+    const ord = data.memberOrder || [];
+    if (!ord.includes(memberId)) tx.update(groupRef, { memberOrder: [...ord, memberId] });
+  });
+  return { code, pending: false };
+}
+
+// Existing-member action: approve a pending join request, atomically adding
+// the requester to the rotation and clearing their request.
+export async function approveJoinRequest(code, uid, memberId) {
+  const groupRef = doc(db, "groups", code);
   await runTransaction(db, async (tx) => {
     const data = (await tx.get(groupRef)).data() || {};
     const order = data.memberOrder || [];
     const uids = data.memberUids || [];
     const updates = {};
     if (!order.includes(memberId)) updates.memberOrder = [...order, memberId];
-    if (uid && !uids.includes(uid)) updates.memberUids = [...uids, uid];
+    if (!uids.includes(uid)) updates.memberUids = [...uids, uid];
     if (Object.keys(updates).length) tx.update(groupRef, updates);
+    tx.delete(doc(db, "groups", code, "joinRequests", uid));
   });
-  return code;
+}
+
+// Existing-member action: decline a pending join request (just removes it —
+// nothing else changes, so a declined requester can still request again later
+// with a different code-typo-free attempt, or a member can reconsider).
+export async function declineJoinRequest(code, uid) {
+  await deleteDoc(doc(db, "groups", code, "joinRequests", uid));
+}
+
+// The requester's own action: cancel a join request they filed themselves
+// (e.g. wrong club, changed their mind) before anyone's approved it.
+export async function cancelJoinRequest(code, uid) {
+  await deleteDoc(doc(db, "groups", code, "joinRequests", uid));
 }
 
 // Whose turn is it to spin? Returns the memberId, or null if no members yet.
@@ -143,9 +187,16 @@ export function currentSpinnerId(group) {
 // Admin action: remove a member from the club. Drops them from the rotation and
 // from memberUids (so the security rules stop trusting them), bans the id/uid so
 // they can't immediately rejoin with the code, fixes the spinner pointer, and
-// best-effort deletes their member record. Client-trusted, like the rest of the
-// rotation logic — meant for a friendly club, not a hostile-actor guard.
+// best-effort deletes their member record. In server-authoritative mode this
+// routes through a callable that actually enforces admin-only (the direct
+// write below is client-trusted, like the rest of the rotation logic — meant
+// for a friendly club, not a hostile-actor guard; `uid` here is only used in
+// that mode, since the function resolves it server-side instead).
 export async function kickMember(code, memberId, uid) {
+  if (useFunctions) {
+    await callFunction("kickMember", { code, memberId });
+    return;
+  }
   const ref = doc(db, "groups", code);
   await runTransaction(db, async (tx) => {
     const g = (await tx.get(ref)).data() || {};

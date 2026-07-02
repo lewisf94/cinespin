@@ -11,9 +11,11 @@ rules_version = '2';
 // shared round/turn/reset state directly — those writes now go through the
 // callable functions (Admin SDK, which bypasses these rules). Concretely,
 // clients may still: read their club, add/remove their own wheel films, write
-// their OWN rating, write their OWN member record, and join. Everything else
-// (currentFilm, currentSpinnerIndex, lastSpin, resetRequest, a film's
-// status/watchedBy/watchedAt) is function-only.
+// their OWN rating, write their OWN member record, and approve/decline a join
+// request (see amApprovingJoin() below — joining now requires an existing
+// member's action, not just knowing the code). Everything else (currentFilm,
+// currentSpinnerIndex, lastSpin, resetRequest, a film's status/watchedBy/
+// watchedAt) is function-only.
 //
 // If you publish these WITHOUT the functions + flag, spinning, marking
 // watched, finishing a round, and resetting will all fail. TEST IN THE
@@ -60,11 +62,14 @@ service cloud.firestore {
       function existingOrder() {
         return resource.data.get('memberOrder', []);
       }
-      function amJoining() {
-        return signedIn()
-          && !(request.auth.uid in existingUids())
-          && !(request.auth.uid in resource.data.get('bannedUids', []))
-          && request.auth.uid in request.resource.data.memberUids
+      // Same join-approval model as the root firestore.rules (see its header
+      // comment): a CURRENT member appends a pending requester's uid/memberId —
+      // a stranger can no longer add themselves. Join was never routed through
+      // the Cloud Functions (even in this hardened mode), so this stays a rules-
+      // only mechanism, consistent with how it's always worked here.
+      function amApprovingJoin() {
+        return amMember()
+          && !request.resource.data.memberUids.hasAny(resource.data.get('bannedUids', []))
           && request.resource.data.memberUids.hasAll(existingUids())
           && request.resource.data.memberUids.size() == existingUids().size() + 1
           && request.resource.data.get('memberOrder', []).hasAll(existingOrder())
@@ -80,10 +85,11 @@ service cloud.firestore {
                     && (!('name' in request.resource.data)
                         || request.resource.data.name.size() <= 200);
       // Members may rename the club and flip the low-stakes wheel display
-      // toggles (streamFilter / wheelCapped); joining may only append a uid.
-      // currentFilm / currentSpinnerIndex / lastSpin / resetRequest are
-      // written exclusively by the Cloud Functions.
-      allow update: if amJoining()
+      // toggles (streamFilter / wheelCapped); joining may only append a uid via
+      // an existing member's approval (amApprovingJoin). currentFilm /
+      // currentSpinnerIndex / lastSpin / resetRequest are written exclusively
+      // by the Cloud Functions.
+      allow update: if amApprovingJoin()
                     || (amMember()
                         && changedKeys().hasOnly(['name', 'streamFilter', 'wheelCapped'])
                         && request.resource.data.get('streamFilter', false) is bool
@@ -91,6 +97,20 @@ service cloud.firestore {
                         && (!('name' in request.resource.data)
                             || request.resource.data.name.size() <= 200));
       allow delete: if false;
+
+      match /joinRequests/{uid} {
+        allow create: if signedIn()
+                      && request.auth.uid == uid
+                      && request.resource.data.uid == uid
+                      && request.resource.data.memberId is string
+                      && (!('name' in request.resource.data)
+                          || request.resource.data.name.size() <= 200)
+                      && !(uid in get(/databases/$(database)/documents/groups/$(code)).data.get('bannedUids', []));
+        allow get:    if isMember(code) || request.auth.uid == uid;
+        allow list:   if isMember(code);
+        allow delete: if isMember(code) || request.auth.uid == uid;
+        allow update: if false;
+      }
 
       match /members/{memberId} {
         allow read:   if isMember(code);

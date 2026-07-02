@@ -7,7 +7,6 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="theme-color" content="#ffffff" />
   <title>CineClub — Film Club</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/icon-180.png" sizes="180x180" data-adaptive-icon />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-180.png" data-adaptive-icon />
@@ -15,10 +14,12 @@
   <meta name="apple-mobile-web-app-title" content="CineClub" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&family=Pixelify+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=Oswald:wght@400;600;700&family=Pixelify+Sans:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <!-- confetti (classic script so window.confetti exists before the modules run) -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- confetti (classic script so window.confetti exists before the modules run) —
+       vendored locally (js/vendor/, ISC-licensed) rather than a CDN: no third-party
+       request, and it's covered by the service-worker precache/offline shell. -->
+  <script src="js/vendor/confetti.browser.js" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -95,8 +96,20 @@
       </footer>
     </section>
 
+    <!-- Waiting on an existing member to approve a join request -->
+    <section id="screen-pending" class="screen hidden">
+      <div class="card panel center">
+        <div class="film-banner">Almost there</div>
+        <h2 id="pending-title">Waiting to be let in</h2>
+        <p class="muted" id="pending-text">Someone in the club needs to approve your request to join.
+          This updates automatically — leave this open, or come back later.</p>
+        <button id="pending-cancel" class="btn small">Cancel request</button>
+      </div>
+    </section>
+
     <!-- The app -->
     <section id="screen-app" class="screen hidden">
+      <div id="join-requests-banner" class="hidden"></div>
       <div id="reset-banner" class="hidden"></div>
       <div id="film-card" class="card film-card"></div>
       <nav class="tabs">

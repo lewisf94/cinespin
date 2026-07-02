@@ -206,6 +206,190 @@ exports.finalizeRound = onCall(async (request) => {
   return { ok: true };
 });
 
+// ---- approval voting (SH-9: previously had no callable — client wrote these
+// fields directly, which the hardened rules below now correctly forbid) ------
+function voteTally(vote) {
+  const shortlist = Array.isArray(vote.shortlist) ? vote.shortlist : [];
+  if (!shortlist.length) return null;
+  const counts = {};
+  Object.values(vote.ballots || {}).forEach((arr) => {
+    (Array.isArray(arr) ? arr : []).forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
+  });
+  // Most approvals wins; ties fall back to shortlist order, which is identical
+  // on every client (matches the client-trusted-mode tie-break in app.js).
+  let best = shortlist[0], bestN = counts[shortlist[0]] || 0;
+  shortlist.forEach((id) => { const n = counts[id] || 0; if (n > bestN) { best = id; bestN = n; } });
+  return best;
+}
+
+// Only the current spinner may open a vote (mirrors commitSpin), and only when
+// no film is in play.
+exports.startVote = onCall(async (request) => {
+  const { groupRef, group, memberId } = await loadMembership(request);
+  if (group.currentFilm) throw new HttpsError("failed-precondition", "A film is already in play.");
+  if (currentSpinnerMemberId(group) !== memberId) {
+    throw new HttpsError("permission-denied", "It's not your turn to start a vote.");
+  }
+  const shortlist = Array.isArray(request.data.shortlist)
+    ? request.data.shortlist.filter((id) => typeof id === "string")
+    : [];
+  if (!shortlist.length) throw new HttpsError("invalid-argument", "Empty shortlist.");
+  await groupRef.update({
+    vote: { startedBy: memberId, startedAt: Date.now(), shortlist, ballots: {} },
+  });
+  return { ok: true };
+});
+
+// Any member may submit/update their OWN ballot (the server derives memberId
+// from auth, same as markWatched) — picks are constrained to the shortlist.
+exports.submitBallot = onCall(async (request) => {
+  const { groupRef, group, memberId } = await loadMembership(request);
+  if (!group.vote) throw new HttpsError("failed-precondition", "No vote in progress.");
+  const shortlist = Array.isArray(group.vote.shortlist) ? group.vote.shortlist : [];
+  const picks = Array.isArray(request.data.movieIds)
+    ? request.data.movieIds.filter((id) => typeof id === "string" && shortlist.includes(id))
+    : [];
+  await groupRef.update({ ["vote.ballots." + memberId]: picks });
+  return { ok: true };
+});
+
+// Only the current spinner may cancel (mirrors the UI, which only shows the
+// button to them).
+exports.cancelVote = onCall(async (request) => {
+  const { groupRef, group, memberId } = await loadMembership(request);
+  if (!group.vote) return { ok: true, already: true };
+  if (currentSpinnerMemberId(group) !== memberId) {
+    throw new HttpsError("permission-denied", "Only the spinner can cancel the vote.");
+  }
+  await groupRef.update({ vote: null });
+  return { ok: true };
+});
+
+// Resolves the vote to a winner. Unlike the spin (where the client's random
+// pick isn't a trust boundary), the vote's winner IS meaningful and this can be
+// triggered by ANY member (the client's single-writer fallback: the spinner
+// commits immediately, others step in after a delay if they don't) — so the
+// server tallies the ballots itself rather than trusting a client-supplied
+// winner. Allowed once everyone's voted, or any time for the spinner (early
+// wrap-up), mirroring finalizeRound's "everyone done, or spinner force" shape.
+exports.commitVoteWinner = onCall(async (request) => {
+  const { code, groupRef, group, memberId } = await loadMembership(request);
+  if (!group.vote) return { ok: true, already: true };
+  if (group.currentFilm) return { ok: true, already: true };
+  const order = group.memberOrder || [];
+  const ballots = group.vote.ballots || {};
+  const allVoted = order.length > 0 && order.every((mid) => Array.isArray(ballots[mid]));
+  if (!allVoted && currentSpinnerMemberId(group) !== memberId) {
+    throw new HttpsError("permission-denied", "Not everyone has voted yet.");
+  }
+  const winnerId = voteTally(group.vote);
+  if (!winnerId) throw new HttpsError("failed-precondition", "No films to choose from.");
+  const movieRef = db.doc(`groups/${code}/movies/${winnerId}`);
+  const movieSnap = await movieRef.get();
+  if (!movieSnap.exists || movieSnap.data().status !== "wheel") {
+    throw new HttpsError("failed-precondition", "That film isn't on the wheel.");
+  }
+  const deadline = Timestamp.fromMillis(Date.now() + DEFAULT_DEADLINE_DAYS * 86400000);
+  const now = Timestamp.now();
+  const batch = db.batch();
+  batch.update(movieRef, { status: "current", pickedAt: now, deadline, watchedBy: [] });
+  batch.update(groupRef, {
+    currentFilm: {
+      movieId: winnerId,
+      title: movieSnap.data().title || "",
+      spinnerMemberId: group.vote.startedBy || memberId,
+      pickedAt: now,
+      deadline,
+    },
+    vote: null,
+  });
+  await batch.commit();
+  return { ok: true };
+});
+
+// ---- vote-to-remove-from-wheel + streaming-service override (SH-9) --------
+// Adds ONLY the caller's vote (like markWatched) — can't be spoofed as another
+// member. Only meaningful against a wheel film.
+exports.voteRemoveMovie = onCall(async (request) => {
+  const { code, memberId } = await loadMembership(request);
+  const movieId = request.data.movieId;
+  if (!movieId) throw new HttpsError("invalid-argument", "Missing movieId.");
+  const movieRef = db.doc(`groups/${code}/movies/${movieId}`);
+  const movieSnap = await movieRef.get();
+  if (!movieSnap.exists || movieSnap.data().status !== "wheel") {
+    throw new HttpsError("failed-precondition", "That film isn't on the wheel.");
+  }
+  await movieRef.update({ removeVotes: FieldValue.arrayUnion(memberId) });
+  return { ok: true };
+});
+
+// Any member may correct a film's "where to watch" (low-stakes club override
+// of TMDB/JustWatch data). null clears it back to TMDB; [] means "nowhere".
+exports.setMovieServices = onCall(async (request) => {
+  const { code } = await loadMembership(request);
+  const movieId = request.data.movieId;
+  if (!movieId) throw new HttpsError("invalid-argument", "Missing movieId.");
+  const serviceIds = Array.isArray(request.data.serviceIds)
+    ? request.data.serviceIds.filter((id) => typeof id === "string")
+    : null;
+  await db.doc(`groups/${code}/movies/${movieId}`).update({ serviceOverride: serviceIds });
+  return { ok: true };
+});
+
+// ---- kickMember -------------------------------------------------------------
+// Found while reviewing scale-readiness: this had no callable at all, so the
+// client's direct kick transaction (memberOrder shrinks, memberUids shrinks)
+// doesn't match ANY shape the hardened rules allow (not a member-editable
+// field, and not an amApprovingJoin()-shaped grow-by-one) — enabling
+// server-authoritative mode would silently break the admin's kick button,
+// same class of gap as the vote functions above. Also a chance to add a real
+// admin check: the client only hides the kick button from non-admins in the
+// UI, but the loose client-trusted rules would let any member call it — here
+// it's actually enforced.
+exports.kickMember = onCall(async (request) => {
+  const { groupRef, group, memberId: callerMemberId } = await loadMembership(request);
+  const targetMemberId = request.data.memberId;
+  if (!targetMemberId) throw new HttpsError("invalid-argument", "Missing memberId.");
+  const adminId = group.adminMemberId || (group.memberOrder || [])[0] || null;
+  if (adminId !== callerMemberId) {
+    throw new HttpsError("permission-denied", "Only the club admin can remove a member.");
+  }
+  if (targetMemberId === callerMemberId) {
+    throw new HttpsError("invalid-argument", "You can't remove yourself.");
+  }
+  const order = group.memberOrder || [];
+  const idx = order.indexOf(targetMemberId);
+  if (idx === -1) return { ok: true, already: true };
+
+  // Resolve the target's uid from their own member doc — don't trust a
+  // client-supplied uid (same reasoning as ownsMember() in the rules).
+  const memberRef = groupRef.collection("members").doc(targetMemberId);
+  const memberSnap = await memberRef.get();
+  const targetUid = memberSnap.exists ? memberSnap.data().uid : null;
+
+  const newOrder = order.filter((id) => id !== targetMemberId);
+  const updates = {
+    memberOrder: newOrder,
+    memberUids: (group.memberUids || []).filter((u) => u !== targetUid),
+    bannedMemberIds: Array.from(new Set([...(group.bannedMemberIds || []), targetMemberId])),
+  };
+  if (targetUid) updates.bannedUids = Array.from(new Set([...(group.bannedUids || []), targetUid]));
+  let spin = group.currentSpinnerIndex || 0;
+  if (idx < spin) spin -= 1;
+  updates.currentSpinnerIndex = newOrder.length
+    ? ((spin % newOrder.length) + newOrder.length) % newOrder.length : 0;
+  const rr = group.resetRequest;
+  if (rr) {
+    updates.resetRequest = Object.assign({}, rr, {
+      approvals: (rr.approvals || []).filter((id) => id !== targetMemberId),
+    });
+  }
+
+  await groupRef.update(updates);
+  if (memberSnap.exists) await memberRef.delete();
+  return { ok: true };
+});
+
 // ---- reset: request / approve(+wipe) / cancel ------------------------------
 exports.requestReset = onCall(async (request) => {
   const { groupRef, group, memberId } = await loadMembership(request);

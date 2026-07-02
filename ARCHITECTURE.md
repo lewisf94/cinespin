@@ -31,6 +31,10 @@ groups/{code}                         # code = 5-char share code (Kahoot-style)
     services: [serviceId, ...]        # optional: streaming services they have (for "who can watch")
     pushTokens: [fcmToken, ...]       # optional: per-device Web Push tokens (deadline reminders)
 
+  joinRequests/{uid}                  # a not-yet-member's pending request to join
+    uid, memberId, name, requestedAt  # deleted on approval (which also adds uid/memberId
+                                       # to memberUids/memberOrder above) or decline
+
   movies/{movieId}
     title, addedByName, addedByMemberId, addedAt
     status: "wheel" | "current" | "watched"
@@ -146,16 +150,23 @@ segment. Sound is WebAudio; the win burst is canvas-confetti.
 - **`get` yes, `list` no.** Anyone signed in may *read a single group doc by
   code* (needed to look one up in order to join, and for the live group
   listener) — but listing/enumerating all clubs is denied.
-- **Join is constrained.** A non-member may update the group doc *only* to
-  append their **own** uid (and their memberId to the rotation) — they can't
-  add anyone else or touch any other field. So you can't read or alter a club
-  you haven't joined. The rotation (`memberOrder`) is **append-only** on join
-  (existing entries preserved, grows by ≤1), so a joiner can't scramble it, and
-  a uid in the group's **`bannedUids`** (set by a kick) is refused — so a kicked
-  member with a stable/saved uid can't rejoin via a raw API call (a *fresh
-  anonymous* uid still could; that needs server-side join). A kicked member's
-  **live session** is ejected client-side too: they keep receiving group-doc
-  snapshots (single-doc `get` is open) but their subcollection reads now fail, so
+- **Join requires an existing member's approval.** A non-member can't add
+  themselves to `memberUids`/`memberOrder` directly — knowing (or guessing) the
+  5-char code only lets them file a `joinRequests/{their-uid}` doc. A CURRENT
+  member then either approves it (one transaction: append the uid/memberId to
+  the group doc, delete the request) or declines it (delete the request, nothing
+  else changes). A **returning** member — uid already in `memberUids`, e.g.
+  reclaiming a seat on a new device via the portable-identity flow below — skips
+  this entirely; it's only for uids the club has never seen. The rotation
+  (`memberOrder`) is still **append-only** on approval (existing entries
+  preserved, grows by ≤1), so an approval can't scramble it, and a uid in the
+  group's **`bannedUids`** (set by a kick) is refused even if a member tries to
+  approve it — so a kicked member with a stable/saved uid can't get back in via
+  a raw API call (a *fresh anonymous* uid still could file a NEW request, but a
+  human member still has to say yes to it — this is the mitigation for that
+  gap, not a cryptographic guarantee). A kicked member's **live session** is
+  ejected client-side too: they keep receiving group-doc snapshots (single-doc
+  `get` is open) but their subcollection reads now fail, so
   `app.js` watches for its own memberId/uid in `bannedMemberIds`/`bannedUids` and
   returns to the landing screen instead of freezing on a half-loaded club.
 - **Own rating/comment only.** A member may create/update only a rating or

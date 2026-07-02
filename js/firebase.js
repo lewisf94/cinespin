@@ -17,7 +17,9 @@ import {
   linkWithCredential,
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection,
   doc,
   getDoc,
@@ -85,7 +87,20 @@ if (isConfigured) {
   // whole app can't do anything before auth anyway.
   await enableAppCheck(app);
   auth = getAuth(app);
-  db = getFirestore(app);
+  // Persistent local cache: the last-synced club (movies, ratings, comments) is
+  // available instantly on reload and while offline, instead of a blank screen
+  // until the network round-trip lands. Multi-tab manager so having the app open
+  // in two tabs shares one cache instead of fighting over it. Falls back to the
+  // default in-memory cache if IndexedDB is unavailable (private browsing in some
+  // browsers) — persistence is a nice-to-have, not a requirement to function.
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
+  } catch (e) {
+    console.error("Firestore persistence unavailable, falling back to in-memory cache:", e);
+    db = initializeFirestore(app, {});
+  }
 }
 
 // App Check is opt-in: only when a site key is set do we lazy-load its SDK and

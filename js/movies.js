@@ -51,26 +51,51 @@ export async function removeMovie(code, movieId) {
 // ---- approval voting: an alternative to the spin ---------------------------
 // The current spinner opens a vote; everyone ticks the films they'd watch; the
 // film with the most approvals becomes the week's pick (no wheel animation).
+// These five (plus voteRemoveMovie/setMovieServices below) route through
+// Cloud Functions when useFunctions is on — see functions/index.js. Until this
+// was added (SH-9), turning on server-authoritative mode silently broke voting.
 export async function startVote(code, memberId, name, shortlist) {
+  const list = Array.isArray(shortlist) ? shortlist : [];
+  if (useFunctions) {
+    await callFunction("startVote", { code, shortlist: list });
+    return;
+  }
   await updateDoc(doc(db, "groups", code), {
     vote: {
       // Only the starter's member id — names are resolved from the member-locked
       // subcollection at render, so they don't leak via the world-readable group doc.
       startedBy: memberId, startedAt: Date.now(),
-      shortlist: Array.isArray(shortlist) ? shortlist : [],
+      shortlist: list,
       ballots: {},
     },
   });
 }
 export async function submitBallot(code, memberId, movieIds) {
+  const picks = Array.isArray(movieIds) ? movieIds : [];
+  if (useFunctions) {
+    await callFunction("submitBallot", { code, movieIds: picks });
+    return;
+  }
   await updateDoc(doc(db, "groups", code), {
-    ["vote.ballots." + memberId]: Array.isArray(movieIds) ? movieIds : [],
+    ["vote.ballots." + memberId]: picks,
   });
 }
 export async function cancelVote(code) {
+  if (useFunctions) {
+    await callFunction("cancelVote", { code });
+    return;
+  }
   await updateDoc(doc(db, "groups", code), { vote: null });
 }
+// `winner`/`deadlineDate`/`spinnerMemberId` are only used in client-trusted
+// mode — in server-authoritative mode the function independently tallies the
+// ballots itself (the winner is meaningful, unlike the spin's randomness, so
+// it isn't trusted from whichever client's fallback timer happens to fire).
 export async function commitVoteWinner(code, winner, deadlineDate, spinnerMemberId) {
+  if (useFunctions) {
+    await callFunction("commitVoteWinner", { code });
+    return;
+  }
   const deadline = Timestamp.fromDate(deadlineDate);
   const now = Timestamp.now();
   await runTransaction(db, async (tx) => {
@@ -100,7 +125,7 @@ export async function postComment(code, movieId, text) {
     memberId: getMemberId(),
     uid: getUid(),
     name: getName(),
-    text: t.slice(0, 1000),
+    text: t.slice(0, 2000),
     createdAt: serverTimestamp(),
   });
 }
@@ -109,8 +134,14 @@ export async function deleteComment(code, commentId) {
 }
 
 // Vote to drop a not-yet-picked film from the wheel. Idempotent (arrayUnion).
-// The app removes the film once everyone except the adder has voted.
+// The app removes the film once everyone except the adder has voted. In
+// server-authoritative mode the function adds ONLY the caller (like
+// markWatched) — memberId here is only used in client-trusted mode.
 export async function voteRemoveMovie(code, movieId, memberId) {
+  if (useFunctions) {
+    await callFunction("voteRemoveMovie", { code, movieId });
+    return;
+  }
   await updateDoc(doc(db, "groups", code, "movies", movieId), {
     removeVotes: arrayUnion(memberId),
   });
@@ -120,8 +151,13 @@ export async function voteRemoveMovie(code, movieId, memberId) {
 // correcting wrong/stale JustWatch data. Pass null to clear it and fall back to
 // TMDB; pass [] to say "not on any subscription service".
 export async function setMovieServices(code, movieId, serviceIds) {
+  const ids = Array.isArray(serviceIds) ? serviceIds : null;
+  if (useFunctions) {
+    await callFunction("setMovieServices", { code, movieId, serviceIds: ids });
+    return;
+  }
   await updateDoc(doc(db, "groups", code, "movies", movieId), {
-    serviceOverride: Array.isArray(serviceIds) ? serviceIds : null,
+    serviceOverride: ids,
   });
 }
 

@@ -8,9 +8,13 @@ rules_version = '2';
 //     order to join, and for the live group listener). LIST is denied, so
 //     nobody can enumerate every club.
 //   - read/write a club's members, movies, ratings: members only.
-//   - JOIN: a non-member may update the group doc ONLY to append their own
-//     uid (and their memberId) — they can't touch anything else, and can't
-//     add anyone but themselves.
+//   - JOIN requires an existing member's approval: a non-member files a
+//     `joinRequests/{their-uid}` doc (visible to existing members and to
+//     themselves); an existing member then either approves it — appending the
+//     requester's uid/memberId to the group doc and deleting the request in one
+//     transaction — or declines it (deletes the request, nothing else changes).
+//     A returning member reclaiming a seat on a new device (uid already in
+//     memberUids) skips this entirely — that's not a new stranger.
 //   - ratings: you may only create/update your OWN rating.
 //   - no client deletes of the group doc.
 //
@@ -22,8 +26,11 @@ rules_version = '2';
 // ROLLOUT: deploy the uid-recording client FIRST (so every member has a uid
 // in `memberUids`), have everyone re-join once, THEN publish these rules —
 // otherwise members without a recorded uid are locked out until they re-join.
-// TEST IN THE FIREBASE EMULATOR before publishing. These rules do NOT
-// auto-deploy: paste into Build -> Firestore Database -> Rules -> Publish.
+// Also note the join flow CHANGED (see above): after publishing, a brand-new
+// member can no longer add themselves — they need an existing member online to
+// approve the request. TEST IN THE FIREBASE EMULATOR before publishing. These
+// rules do NOT auto-deploy: paste into Build -> Firestore Database -> Rules ->
+// Publish.
 // --------------------------------------------------------------------------
 
 service cloud.firestore {
@@ -75,15 +82,19 @@ service cloud.firestore {
       function existingOrder() {
         return resource.data.get('memberOrder', []);
       }
-      // A non-member may update the group doc ONLY to append their own uid
-      // (and their memberId to the rotation) — exactly the join transaction.
-      // Banned uids can't rejoin, and the rotation is append-only here, so a
-      // joiner can't scramble or wipe the turn order while joining.
-      function amJoining() {
-        return signedIn()
-          && !(request.auth.uid in existingUids())
-          && !(request.auth.uid in resource.data.get('bannedUids', []))
-          && request.auth.uid in request.resource.data.memberUids
+      // A CURRENT member may append someone else's uid (+ memberId to the
+      // rotation) to the group doc — this is "approve a join request." A
+      // stranger who merely knows/guesses the code can no longer add themselves
+      // (that used to be amJoining(), removed) — only an already-vetted member's
+      // own action can grant access, closing the guessable-5-char-code hole
+      // (SH-3 / R-3). Structurally the same append-only, grow-by-one shape as
+      // the old self-join rule; the difference is WHO is allowed to invoke it.
+      // hasAny(bannedUids) covers the newly-added uid without needing to isolate
+      // it from the diff (no list-membership arithmetic needed: if the result
+      // contains ANY banned uid — old or new — the write is rejected outright).
+      function amApprovingJoin() {
+        return amMember()
+          && !request.resource.data.memberUids.hasAny(resource.data.get('bannedUids', []))
           && request.resource.data.memberUids.hasAll(existingUids())
           && request.resource.data.memberUids.size() == existingUids().size() + 1
           && request.resource.data.get('memberOrder', []).hasAll(existingOrder())
@@ -99,8 +110,35 @@ service cloud.firestore {
                     && request.resource.data.memberUids.size() == 1
                     && (!('name' in request.resource.data)
                         || request.resource.data.name.size() <= 200);
-      allow update: if amMember() || amJoining();
+      // A RETURNING member (uid already in memberUids — e.g. reclaiming a seat
+      // on a new device via the portable-identity/email-link flow) is already
+      // covered by amMember() alone, since only memberOrder changes for them.
+      // A brand-new uid must go through amApprovingJoin() below (joinRequests).
+      allow update: if amMember() || amApprovingJoin();
       allow delete: if false;
+
+      // A prospective (not-yet-member) joiner files a request here instead of
+      // adding themselves directly — see amApprovingJoin() above. The doc id IS
+      // the requester's uid, so there's at most one open request per identity.
+      match /joinRequests/{uid} {
+        allow create: if signedIn()
+                      && request.auth.uid == uid
+                      && request.resource.data.uid == uid
+                      && request.resource.data.memberId is string
+                      && (!('name' in request.resource.data)
+                          || request.resource.data.name.size() <= 200)
+                      && !(uid in get(/databases/$(database)/documents/groups/$(code)).data.get('bannedUids', []));
+        // Existing members see the queue (to approve/decline); the requester can
+        // read their own request to notice it's been declined (deleted) while
+        // they're still not a member.
+        allow get:    if isMember(code) || request.auth.uid == uid;
+        allow list:   if isMember(code);
+        // A member declines; the requester can cancel their own pending request;
+        // approval also deletes it (as part of the same client transaction that
+        // updates the group doc above).
+        allow delete: if isMember(code) || request.auth.uid == uid;
+        allow update: if false; // no partial edits — cancel and re-request instead
+      }
 
       match /members/{memberId} {
         allow read:   if isMember(code);
